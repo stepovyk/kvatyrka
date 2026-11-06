@@ -68,7 +68,6 @@ public sealed class IslandWindow : ShellWindow
         _timer.Tick += (_, _) => Tick();
         Loaded += (_, _) =>
         {
-            Scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
             Rebuild();
             _timer.Start();
             AppCatalog.Instance.WarmUp(IconPixels);
@@ -254,6 +253,8 @@ public sealed class IslandWindow : ShellWindow
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
+        Scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+        Backdrop.Rebuild();
         HwndSource.FromHwnd(Handle)?.AddHook(WndProc);
     }
 

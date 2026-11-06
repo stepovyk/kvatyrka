@@ -70,6 +70,9 @@ internal static class ShellItems
     [DllImport("shell32.dll", PreserveSig = true)]
     private static extern int SHGetPropertyStoreForWindow(IntPtr hwnd, [In] ref Guid riid, [MarshalAs(UnmanagedType.Interface)] out object ppv);
 
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = true)]
+    private static extern int SHGetPropertyStoreFromParsingName(string path, IntPtr pbc, int flags, [In] ref Guid riid, [MarshalAs(UnmanagedType.Interface)] out object ppv);
+
     [DllImport("ole32.dll")] private static extern int PropVariantClear(ref PROPVARIANT pv);
     [DllImport("ole32.dll")] private static extern void CoTaskMemFree(IntPtr p);
 
@@ -135,6 +138,25 @@ internal static class ShellItems
         var src = BitmapSource.Create(bm.bmWidth, h, 96, 96, PixelFormats.Pbgra32, null, pixels, stride);
         src.Freeze();
         return src;
+    }
+
+    private static readonly PROPERTYKEY PKEY_Link_TargetParsingPath = new(new Guid("B9B4B3FC-2B51-4A42-B5D8-324146AFCF25"), 2);
+
+    // Шлях, на який веде ярлик програми з «shell:AppsFolder» (для Chrome, Discord тощо, де замість шляху – AUMID ярлика).
+    public static string? LinkTarget(string parsingName)
+    {
+        var iid = IID_IPropertyStore;
+        if (SHGetPropertyStoreFromParsingName($"shell:AppsFolder\\{parsingName}", IntPtr.Zero, 0, ref iid, out var obj) != 0) return null;
+        try
+        {
+            var store = (IPropertyStore)obj;
+            var key = PKEY_Link_TargetParsingPath;
+            if (store.GetValue(ref key, out var pv) != 0) return null;
+            try { return pv.vt == 31 && pv.p != IntPtr.Zero ? Marshal.PtrToStringUni(pv.p) : null; }
+            finally { PropVariantClear(ref pv); }
+        }
+        catch (COMException) { return null; }
+        finally { Marshal.ReleaseComObject(obj); }
     }
 
     public static string? WindowAumid(IntPtr hWnd)

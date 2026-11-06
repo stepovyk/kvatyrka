@@ -9,7 +9,21 @@ namespace Kvatyrka.Shell.Services;
 
 public sealed record AppInfo(string Name, string Target)
 {
-    public string? Exe => Target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? Path.GetFileName(Target) : null;
+    private string? _exe;
+    private bool _resolved;
+
+    // Ім'я .exe програми: із самої адреси або з ярлика, на який вона веде.
+    public string? Exe
+    {
+        get
+        {
+            if (_resolved) return _exe;
+            _resolved = true;
+            if (Target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) return _exe = Path.GetFileName(Target);
+            var link = ShellItems.LinkTarget(Target);
+            return _exe = link is not null && link.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? Path.GetFileName(link) : null;
+        }
+    }
 }
 
 // Каталог усіх встановлених програм і їхніх іконок.
@@ -87,7 +101,9 @@ public sealed class AppCatalog
         {
             foreach (var (target, px, done) in _queue.GetConsumingEnumerable())
             {
-                var icon = Icon(target, px);
+                BitmapSource? icon = null;
+                try { icon = Icon(target, px); }
+                catch (Exception ex) { Log.Write($"Іконка {target} не прочиталась: {ex.Message}"); }
                 done?.Invoke(icon);
             }
         }) { IsBackground = true, Priority = ThreadPriority.BelowNormal, Name = "Kvatyrka.Icons" };

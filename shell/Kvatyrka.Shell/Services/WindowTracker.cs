@@ -44,6 +44,11 @@ public static class WindowTracker
             return true;
         }, IntPtr.Zero);
 
+        // PID перевикористовуються: кеш тримає лише процеси з цього знімка.
+        var pids = new HashSet<uint>();
+        foreach (var w in result) { Win32.GetWindowThreadProcessId(w.Handle, out var pid); pids.Add(pid); }
+        foreach (var dead in ProcessCache.Keys.Where(p => !pids.Contains(p)).ToList()) ProcessCache.Remove(dead);
+
         // Сталий порядок: у якому вікна з'явилися, а не z-порядок, що міняється з кожним перемиканням.
         foreach (var w in result) if (!FirstSeen.ContainsKey(w.Handle)) FirstSeen[w.Handle] = ++_counter;
         if (FirstSeen.Count > result.Count + 64)

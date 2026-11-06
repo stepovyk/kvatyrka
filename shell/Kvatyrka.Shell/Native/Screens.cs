@@ -10,6 +10,8 @@ internal static class Screens
     [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
     [DllImport("user32.dll")] private static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hWnd, out Win32.RECT rect);
+    [DllImport("user32.dll")] private static extern bool IsZoomed(IntPtr hWnd);
+    private const long WS_CAPTION = 0x00C00000;
     private const uint MONITOR_DEFAULTTOPRIMARY = 1;
     private const uint MONITORINFOF_PRIMARY = 1;
 
@@ -30,6 +32,8 @@ internal static class Screens
         if (fg == IntPtr.Zero) return false;
         var cls = Win32.ClassName(fg);
         if (cls is "Progman" or "WorkerW" or "Shell_TrayWnd") return false;
+        // Звичайне розгорнуте вікно з заголовком виходить за краї на кілька пікселів, але це не повний екран.
+        if (IsZoomed(fg) && (Win32.GetWindowLongPtr(fg, -16).ToInt64() & WS_CAPTION) == WS_CAPTION) return false;
         if (!GetWindowRect(fg, out var r)) return false;
         var info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
         if (!GetMonitorInfo(MonitorFromWindow(fg, MONITOR_DEFAULTTOPRIMARY), ref info) || (info.dwFlags & MONITORINFOF_PRIMARY) == 0) return false;

@@ -162,7 +162,7 @@ public sealed class MenuWindow : PopupWindow
         TileView.TileWidth = Math.Floor((inner - TileGap * (cols - 1)) / cols);
         // Кожна плитка має поле 2 з боків, тож крок між ними space-4. Смуга прокрутки стоїть праворуч поза сіткою,
         // а ліве поле зсуває все так, щоб саме сітка, а не сітка зі смугою, була рівно по центру.
-        _list.Width = (TileView.TileWidth + TileGap) * cols + ScrollBarWidth;
+        _list.Width = (TileView.TileWidth + TileGap) * cols + ScrollBarWidth + 1; // +1: округлення до пікселів при 125/150 %
         _list.Margin = new Thickness(ScrollBarWidth - TileGap / 2, 0, -TileGap / 2, 0);
         _list.HorizontalAlignment = HorizontalAlignment.Center;
         _body.Height = TileHeight * VisibleRows + TileGap * (VisibleRows - 1);
