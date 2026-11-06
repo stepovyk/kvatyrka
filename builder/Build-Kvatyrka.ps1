@@ -24,6 +24,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+# Відносні шляхи – від поточної папки PowerShell, а не від System32, де працюють reg.exe і .NET.
+$Out = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Out)
+$Shell = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Shell)
 Set-StrictMode -Version 3
 
 $script:Step = 0
@@ -59,15 +62,21 @@ function Mount-Hives([string]$Root) {
     }
 }
 
+# Відключає всі завантажені гілки; ті, що вже відключені, пропускає. Помилки reg.exe не зупиняють повтори.
 function Dismount-Hives {
+    $ErrorActionPreference = 'Continue'
     [GC]::Collect(); [GC]::WaitForPendingFinalizers()
+    $left = @()
     foreach ($h in $Hives.Keys) {
+        if (-not (Test-Path "Registry::HKEY_LOCAL_MACHINE\$h")) { continue }
         for ($i = 0; $i -lt 10; $i++) {
-            & reg.exe unload "HKLM\$h" 2>$null | Out-Null
-            if ($LASTEXITCODE -eq 0) { break }
-            Start-Sleep -Milliseconds 500
+            & cmd.exe /c "reg unload HKLM\$h >nul 2>&1"
+            if (-not (Test-Path "Registry::HKEY_LOCAL_MACHINE\$h")) { break }
+            [GC]::Collect(); Start-Sleep -Milliseconds 500
         }
+        if (Test-Path "Registry::HKEY_LOCAL_MACHINE\$h") { $left += $h }
     }
+    if ($left) { throw "Не вдалося відключити реєстр образу: $($left -join ', ')" }
 }
 
 # Запис у завантажений реєстр образу через .NET: без проблем із лапками в аргументах reg.exe.
@@ -104,7 +113,7 @@ function Set-Policies($cfg) {
     }
     if ($p.noAds) {
         $cloud = "$sw\Policies\Microsoft\Windows\CloudContent"
-        foreach ($n in 'DisableWindowsConsumerFeatures', 'DisableConsumerAccountStateContent', 'DisableCloudOptimizedContent', 'DisableSoftLanding') { Set-Reg $cloud $n 1 }
+        foreach ($n in 'DisableConsumerAccountStateContent', 'DisableCloudOptimizedContent') { Set-Reg $cloud $n 1 }
         $cdm = "$usr\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
         foreach ($n in 'ContentDeliveryAllowed', 'OemPreInstalledAppsEnabled', 'PreInstalledAppsEnabled', 'PreInstalledAppsEverEnabled', 'SilentInstalledAppsEnabled',
             'SoftLandingEnabled', 'SystemPaneSuggestionsEnabled', 'SubscribedContentEnabled', 'SubscribedContent-310093Enabled', 'SubscribedContent-338388Enabled',
@@ -139,7 +148,6 @@ function Set-Policies($cfg) {
         Write-Note 'OneDrive не встановлюється'
     }
     if ($p.noTeamsAndOutlookAutoInstall) {
-        Set-Reg "$sw\Microsoft\Windows\CurrentVersion\Communications" 'ConfigureChatAutoInstall' 0
         Set-Reg "$sw\Policies\Microsoft\Windows\Windows Chat" 'ChatIcon' 3
         Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" 'TaskbarMn' 0
         foreach ($k in 'OutlookUpdate', 'DevHomeUpdate') { Remove-RegKey "$sw\Microsoft\WindowsUpdate\Orchestrator\UScheduler_Oobe\$k"; Remove-RegKey "$sw\Microsoft\WindowsUpdate\Orchestrator\UScheduler\$k" }
@@ -162,6 +170,12 @@ function Set-Policies($cfg) {
         Write-Note 'Ізоляція ядра (цілісність пам''яті) – увімкнена'
     }
     Set-Reg "$usr\Software\Microsoft\GameBar" 'AutoGameModeEnabled' ([int][bool]$s.gameMode)
+    if (-not ($cfg.keepApps | Where-Object { 'Microsoft.XboxGamingOverlay' -like $_ })) {
+        Set-Reg "$usr\System\GameConfigStore" 'GameDVR_Enabled' 0
+        Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\GameDVR" 'AppCaptureEnabled' 0
+        Set-Reg "$sw\Policies\Microsoft\Windows\GameDVR" 'AllowGameDVR' 0
+        Write-Note 'Game Bar прибрано, запис гри вимкнено – ігровий режим працює'
+    }
     if (-not $s.systemRestore) {
         Set-Reg "$sw\Policies\Microsoft\Windows NT\SystemRestore" 'DisableSR' 1
         Set-Reg "$sw\Policies\Microsoft\Windows NT\SystemRestore" 'DisableConfig' 1
@@ -252,6 +266,7 @@ public static class KvatyrkaIso {
                     f.Write(buf, 0, n);
                     total -= n;
                 }
+                if (total > 0) throw new IOException("Потік ISO закінчився раніше: бракує " + total + " байт");
             }
         } finally { System.Runtime.InteropServices.Marshal.FreeHGlobal(read); }
     }
@@ -330,6 +345,8 @@ try {
     $wim = Join-Path $work 'sources\install.kv.wim'
     Export-WindowsImage -SourceImagePath $source -SourceIndex $index -DestinationImagePath $wim -CompressionType max | Out-Null
     Remove-Item $source -Force
+    # В образі одна редакція: ei.cfg каже інсталятору брати її, навіть якщо в прошивці ключ іншої (часто Home).
+    [IO.File]::WriteAllText((Join-Path $work 'sources\ei.cfg'), "[EditionID]`r`n$edition`r`n[Channel]`r`nRetail`r`n", [Text.Encoding]::ASCII)
 
     Write-Step 'Відкриваю образ'
     Mount-WindowsImage -ImagePath $wim -Index 1 -Path $mount | Out-Null
@@ -361,15 +378,16 @@ try {
     }
 
     Write-Step 'Налаштовую систему'
-    Mount-Hives $mount
     $hivesLoaded = $true
+    Mount-Hives $mount
     Set-Policies $cfg
 
     if ($cfg.wallpaper) {
-        # Шпалери за замовчуванням: замінюємо файли теми Windows, тож вони стоять і на екрані входу, і в нового користувача.
+        # Шпалери за замовчуванням: замінюємо файли світлої й темної тем Windows і типовий екран блокування.
         $src = Join-Path $PSScriptRoot $cfg.wallpaper
         if (-not (Test-Path $src)) { Fail "Немає файла шпалер: $src" }
-        foreach ($f in Get-ChildItem (Join-Path $mount 'Windows\Web') -Recurse -Filter 'img0*.jpg') {
+        $targets = @(Get-ChildItem (Join-Path $mount 'Windows\Web') -Recurse -Include 'img0*.jpg', 'img19*.jpg', 'img100.jpg')
+        foreach ($f in $targets) {
             & takeown.exe /f $f.FullName | Out-Null
             & icacls.exe $f.FullName /grant '*S-1-5-32-544:F' | Out-Null
             Copy-Item $src $f.FullName -Force
@@ -419,6 +437,6 @@ try {
     Write-Note 'Запишіть на флешку (наприклад, Rufus) і встановлюйте як звичайний Windows.'
 }
 finally {
-    if ($hivesLoaded) { Dismount-Hives }
-    if ($mounted) { Dismount-WindowsImage -Path $mount -Discard | Out-Null }
+    if ($hivesLoaded) { try { Dismount-Hives } catch { Write-Warning $_ } }
+    if ($mounted) { try { Dismount-WindowsImage -Path $mount -Discard | Out-Null } catch { Write-Warning "Образ лишився підключеним: $mount. Виконайте: dism /Unmount-Image /MountDir:`"$mount`" /Discard" } }
 }
