@@ -76,13 +76,41 @@ public sealed class AppCatalog
         : app.Exe is not null && string.Equals(app.Exe, BrowserExe.Value, StringComparison.OrdinalIgnoreCase) ? Ui.IconKind.Globe
         : Ui.IconKind.None;
 
-    // Іконки всіх програм готуються заздалегідь у фоні, щоб меню відкривалося миттєво.
+    // Іконки читаються в окремому потоці оболонки: інтерфейс не чекає на диск і COM.
+    private readonly System.Collections.Concurrent.BlockingCollection<(string Target, int Px, Action<BitmapSource?>? Done)> _queue = new();
+    private Thread? _worker;
+
+    private void EnsureWorker()
+    {
+        if (_worker is not null) return;
+        _worker = new Thread(() =>
+        {
+            foreach (var (target, px, done) in _queue.GetConsumingEnumerable())
+            {
+                var icon = Icon(target, px);
+                done?.Invoke(icon);
+            }
+        }) { IsBackground = true, Priority = ThreadPriority.BelowNormal, Name = "Kvatyrka.Icons" };
+        _worker.SetApartmentState(ApartmentState.STA);
+        _worker.Start();
+    }
+
+    // Іконка з кешу одразу або пізніше через done (у потоці інтерфейсу).
+    public BitmapSource? IconAsync(string target, int px, Action<BitmapSource?> done)
+    {
+        var key = target.Equals("explorer.exe", StringComparison.OrdinalIgnoreCase) ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe") : target;
+        if (_icons.TryGetValue((key, px), out var cached)) return cached;
+        EnsureWorker();
+        var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+        _queue.Add((target, px, icon => dispatcher.BeginInvoke(() => done(icon))));
+        return null;
+    }
+
+    // Іконки всіх програм готуються заздалегідь, щоб меню відкривалося миттєво.
     public void WarmUp(int px)
     {
-        var apps = All.ToList();
-        var thread = new Thread(() => { foreach (var a in apps) Icon(a.Target, px); }) { IsBackground = true, Priority = ThreadPriority.BelowNormal };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
+        EnsureWorker();
+        foreach (var a in All) _queue.Add((a.Target, px, null));
     }
 
     public static void Launch(string target)

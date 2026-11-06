@@ -73,7 +73,15 @@ public sealed class IslandWindow : ShellWindow
             _timer.Start();
             AppCatalog.Instance.WarmUp(IconPixels);
         };
-        DpiChanged += (_, e) => { Scale = e.NewDpi.DpiScaleX; _layoutKey = string.Empty; Rebuild(); };
+        DpiChanged += (_, e) =>
+        {
+            Scale = e.NewDpi.DpiScaleX;
+            _layoutKey = string.Empty;
+            Backdrop.Rebuild();
+            Rebuild();
+            Place();
+            App.Current.ApplyTakeover();
+        };
         SizeChanged += (_, _) => Place();
     }
 
@@ -98,7 +106,7 @@ public sealed class IslandWindow : ShellWindow
 
     private static Border Divider()
     {
-        var d = new Border { Width = 1, Height = 28, Margin = new Thickness(6, 0, 6, 0) };
+        var d = new Border { Width = 1, Height = 28 };
         d.SetResourceReference(Border.BackgroundProperty, "divider");
         return d;
     }
@@ -132,9 +140,13 @@ public sealed class IslandWindow : ShellWindow
         Tick();
     }
 
+    // Між комірками space-4; розділювач має ще по 6 з кожного боку. Поля задаються щоразу заново, не накопичуються.
     private void Add(FrameworkElement e)
     {
-        e.Margin = new Thickness(_row.Children.Count == 0 ? 0 : e.Margin.Left + 4, 0, e.Margin.Right, 0);
+        var isDivider = e is Border { Width: 1 };
+        var afterDivider = _row.Children.Count > 0 && _row.Children[^1] is Border { Width: 1 };
+        var left = _row.Children.Count == 0 ? 0 : 4 + (isDivider || afterDivider ? 6 : 0);
+        e.Margin = new Thickness(left, 0, 0, 0);
         _row.Children.Add(e);
     }
 
@@ -217,12 +229,16 @@ public sealed class IslandWindow : ShellWindow
         _date.Text = $"{Uk.DateTimeFormat.GetAbbreviatedDayName(now.DayOfWeek).ToLower(Uk)}, {now.ToString("d MMMM", Uk)}";
         _lang.Text = SystemState.InputLanguage();
         var snapshot = WindowTracker.Snapshot();
-        if (!snapshot.Select(w => w.Handle).SequenceEqual(_windows.Select(w => w.Handle)))
+        if (!snapshot.Select(w => w.Handle).ToHashSet().SetEquals(_windows.Select(w => w.Handle)))
         {
             _windows = snapshot;
             Rebuild();
         }
-        else UpdateStates();
+        else
+        {
+            _windows = snapshot;
+            UpdateStates();
+        }
     }
 
     // Острів по центру внизу, на space-16 від краю екрана.

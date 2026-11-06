@@ -18,7 +18,9 @@ public static class WindowTracker
     };
 
     private static readonly uint OwnPid = (uint)Environment.ProcessId;
-    private static readonly Dictionary<uint, string?> PathCache = new();
+    private static readonly Dictionary<uint, (string? Path, string? Aumid)> ProcessCache = new();
+    private static readonly Dictionary<IntPtr, long> FirstSeen = new();
+    private static long _counter;
 
     public static List<AppWindow> Snapshot()
     {
@@ -35,20 +37,28 @@ public static class WindowTracker
             if (title.Length == 0) return true;
             Win32.GetWindowThreadProcessId(h, out var pid);
             if (pid == OwnPid) return true;
-            var path = ProcessPath(pid);
-            var aumid = ShellItems.WindowAumid(h);
+            var (path, processAumid) = ProcessInfo(pid);
+            var aumid = ShellItems.WindowAumid(h) ?? processAumid;
             if (aumid is null && path is not null && Path.GetFileName(path).Equals("ApplicationFrameHost.exe", StringComparison.OrdinalIgnoreCase)) return true;
             result.Add(new AppWindow(h, title, cls == "ApplicationFrameWindow" ? null : path, aumid, cls));
             return true;
         }, IntPtr.Zero);
-        return result;
+
+        // Сталий порядок: у якому вікна з'явилися, а не z-порядок, що міняється з кожним перемиканням.
+        foreach (var w in result) if (!FirstSeen.ContainsKey(w.Handle)) FirstSeen[w.Handle] = ++_counter;
+        if (FirstSeen.Count > result.Count + 64)
+        {
+            var alive = result.Select(w => w.Handle).ToHashSet();
+            foreach (var dead in FirstSeen.Keys.Where(k => !alive.Contains(k)).ToList()) FirstSeen.Remove(dead);
+        }
+        return result.OrderBy(w => FirstSeen[w.Handle]).ToList();
     }
 
-    private static string? ProcessPath(uint pid)
+    private static (string? Path, string? Aumid) ProcessInfo(uint pid)
     {
-        if (PathCache.TryGetValue(pid, out var p)) return p;
-        if (PathCache.Count > 512) PathCache.Clear();
-        return PathCache[pid] = Win32.ProcessPath(pid);
+        if (ProcessCache.TryGetValue(pid, out var p)) return p;
+        if (ProcessCache.Count > 512) ProcessCache.Clear();
+        return ProcessCache[pid] = (Win32.ProcessPath(pid), Win32.ProcessAumid(pid));
     }
 
     private static readonly Dictionary<string, string> Names = new(StringComparer.OrdinalIgnoreCase);
@@ -87,8 +97,15 @@ public static class WindowTracker
         var fg = Win32.GetForegroundWindow();
         var front = windows.FirstOrDefault(w => w.Handle == fg);
         if (front is not null && windows.Count == 1) { Win32.ShowWindow(front.Handle, Win32.SW_MINIMIZE); return; }
-        var next = front is null ? windows[0] : windows[(windows.ToList().IndexOf(front) + 1) % windows.Count];
-        Activate(next.Handle);
+        // Вікна в сталому порядку: наступне після переднього, по колу – так по черзі видно всі.
+        var index = front is null ? 0 : (IndexOf(windows, front) + 1) % windows.Count;
+        Activate(windows[index].Handle);
+    }
+
+    private static int IndexOf(IReadOnlyList<AppWindow> list, AppWindow item)
+    {
+        for (var i = 0; i < list.Count; i++) if (list[i].Handle == item.Handle) return i;
+        return -1;
     }
 
     public static void Activate(IntPtr h)

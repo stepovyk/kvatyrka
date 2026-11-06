@@ -101,11 +101,15 @@ public partial class App : Application
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         }
         _settingsWindow.Show();
+        if (_settingsWindow.WindowState == WindowState.Minimized) _settingsWindow.WindowState = WindowState.Normal;
         _settingsWindow.Activate();
     }
 
+    public bool ShuttingDown { get; private set; }
+
     public void Quit()
     {
+        ShuttingDown = true;
         _winKey?.Dispose();
         TaskbarTakeover.Restore();
         Shutdown();
@@ -119,6 +123,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        ShuttingDown = true;
         _winKey?.Dispose();
         TaskbarTakeover.Restore();
         _single?.Dispose();

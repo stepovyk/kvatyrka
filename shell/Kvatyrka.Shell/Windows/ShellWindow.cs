@@ -57,8 +57,15 @@ public abstract class ShellWindow : Window
         return root;
     }
 
-    // Екран у DIP (основний монітор).
-    protected static Size Screen => new(SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
+    // Основний монітор у DIP за поточним масштабом острова (а не за масштабом, з яким запущено процес).
+    public static Size Screen
+    {
+        get
+        {
+            var (w, h) = Native.Screens.PrimaryPixels();
+            return new Size(w / Scale, h / Scale);
+        }
+    }
 
     // Поставити вміст (без поля тіні) так, щоб його лівий нижній кут був у заданій точці екрана.
     protected void PlaceContent(double left, double bottom)
@@ -81,6 +88,17 @@ public abstract class PopupWindow : ShellWindow
     }
 
     public bool IsOpen => IsVisible;
+
+    // Alt+F4 лише ховає панель: закрите вікно WPF не можна показати знову.
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        if (!App.Current.ShuttingDown)
+        {
+            e.Cancel = true;
+            HidePopup();
+        }
+        base.OnClosing(e);
+    }
     public event Action? OpenChanged;
 
     public void Toggle()

@@ -27,6 +27,9 @@ internal static class Win32
     public struct RECT { public int Left, Top, Right, Bottom; }
 
     [StructLayout(LayoutKind.Sequential)]
+    public struct POINT { public int X, Y; }
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct KBDLLHOOKSTRUCT { public uint vkCode, scanCode, flags, time; public IntPtr dwExtraInfo; }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -79,6 +82,7 @@ internal static class Win32
     [DllImport("kernel32.dll", SetLastError = true)] public static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] public static extern bool QueryFullProcessImageName(IntPtr process, int flags, StringBuilder sb, ref int size);
     [DllImport("kernel32.dll")] public static extern bool CloseHandle(IntPtr handle);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] public static extern int GetApplicationUserModelId(IntPtr process, ref int length, StringBuilder? aumid);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr GetModuleHandle(string? name);
 
     [DllImport("gdi32.dll")] public static extern bool DeleteObject(IntPtr obj);
@@ -115,6 +119,20 @@ internal static class Win32
         finally { CloseHandle(h); }
     }
 
+    // AUMID процесу: є в програм зі Store й тих, хто задає його для всього процесу.
+    public static string? ProcessAumid(uint pid)
+    {
+        var h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+        if (h == IntPtr.Zero) return null;
+        try
+        {
+            var len = 256;
+            var sb = new StringBuilder(len);
+            return GetApplicationUserModelId(h, ref len, sb) == 0 ? sb.ToString() : null;
+        }
+        finally { CloseHandle(h); }
+    }
+
     public static bool IsCloaked(IntPtr hWnd) =>
         DwmGetWindowAttribute(hWnd, DWMWA_CLOAKED, out var v, sizeof(int)) == 0 && v != 0;
 
@@ -124,7 +142,7 @@ internal static class Win32
         SetWindowLongPtr(hWnd, GWL_EXSTYLE, new IntPtr(cur | add));
     }
 
-    public static void TapKeyThenRelease(ushort vk, ushort release)
+    public static bool TapKeyThenRelease(ushort vk, ushort release)
     {
         var inputs = new[]
         {
@@ -132,6 +150,6 @@ internal static class Win32
             new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = vk, dwFlags = KEYEVENTF_KEYUP } } },
             new INPUT { type = INPUT_KEYBOARD, u = new InputUnion { ki = new KEYBDINPUT { wVk = release, dwFlags = KEYEVENTF_KEYUP } } },
         };
-        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+        return SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>()) == inputs.Length;
     }
 }

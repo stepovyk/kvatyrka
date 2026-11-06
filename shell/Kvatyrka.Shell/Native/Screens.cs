@@ -13,6 +13,16 @@ internal static class Screens
     private const uint MONITOR_DEFAULTTOPRIMARY = 1;
     private const uint MONITORINFOF_PRIMARY = 1;
 
+    [DllImport("user32.dll")] private static extern IntPtr MonitorFromPoint(Win32.POINT pt, uint flags);
+
+    // Розмір основного монітора у фізичних пікселях – не залежить від масштабу, з яким запущено процес.
+    public static (int Width, int Height) PrimaryPixels()
+    {
+        var info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+        GetMonitorInfo(MonitorFromPoint(new Win32.POINT(), MONITOR_DEFAULTTOPRIMARY), ref info);
+        return (info.rcMonitor.Right - info.rcMonitor.Left, info.rcMonitor.Bottom - info.rcMonitor.Top);
+    }
+
     // Вікно спереду займає весь основний монітор (повноекранна гра, відео, презентація).
     public static bool ForegroundIsFullscreen()
     {

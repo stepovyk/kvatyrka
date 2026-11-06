@@ -12,6 +12,7 @@ public sealed class MenuWindow : PopupWindow
 {
     private const double TileHeight = 92, TileGap = 4, Pad = 23, MinTile = 100;
     private const int VisibleRows = 4;
+    private const double ScrollBarWidth = 6; // ширина смуги з Ui/Styles.xaml
 
     private readonly TextBox _search = new() { Style = (Style)Application.Current.Resources["BareInput"] };
     private readonly TextBlock _hint = new() { Text = "Пошук програм", Style = (Style)Application.Current.Resources["secondary"], IsHitTestVisible = false };
@@ -56,6 +57,13 @@ public sealed class MenuWindow : PopupWindow
         ScrollViewer.SetHorizontalScrollBarVisibility(_list, ScrollBarVisibility.Disabled);
         ScrollViewer.SetVerticalScrollBarVisibility(_list, ScrollBarVisibility.Auto);
         _list.ItemsPanel = new ItemsPanelTemplate(new FrameworkElementFactory(typeof(WrapPanel)));
+        // Без рамки й полів стандартного шаблону: лише прокрутка й плитки.
+        var scroller = new FrameworkElementFactory(typeof(ScrollViewer));
+        scroller.SetValue(FocusableProperty, false);
+        scroller.SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
+        scroller.SetValue(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Visible);
+        scroller.AppendChild(new FrameworkElementFactory(typeof(ItemsPresenter)));
+        _list.Template = new ControlTemplate(typeof(ListBox)) { VisualTree = scroller };
         _list.ItemContainerStyle = TileStyle();
         _list.ItemTemplate = TileTemplate();
         _list.MouseUp += (_, e) => { if (e.ChangedButton == MouseButton.Left && (e.OriginalSource as DependencyObject)?.FindParent<ListBoxItem>() is { DataContext: AppInfo a }) Launch(a); };
@@ -148,12 +156,14 @@ public sealed class MenuWindow : PopupWindow
     {
         _search.Text = string.Empty;
         _width = Math.Max(IslandWindow.Bounds.Width, 640);
-        var inner = _width - 2 * (Pad + 1);
+        // Ширина під сітку: мінус поле під смугу прокрутки з обох боків, щоб сітка лишалась по центру.
+        var inner = _width - 2 * (Pad + 1) - 2 * (ScrollBarWidth + 2);
         var cols = Math.Max(1, (int)((inner + TileGap) / (MinTile + TileGap)));
         TileView.TileWidth = Math.Floor((inner - TileGap * (cols - 1)) / cols);
-        // Кожна плитка має поле 2 з боків, тож сітка рівно по центру з кроком space-4.
-        _list.Width = (TileView.TileWidth + TileGap) * cols;
-        _list.Margin = new Thickness(-TileGap / 2, 0, -TileGap / 2, 0);
+        // Кожна плитка має поле 2 з боків, тож крок між ними space-4. Смуга прокрутки стоїть праворуч поза сіткою,
+        // а ліве поле зсуває все так, щоб саме сітка, а не сітка зі смугою, була рівно по центру.
+        _list.Width = (TileView.TileWidth + TileGap) * cols + ScrollBarWidth;
+        _list.Margin = new Thickness(ScrollBarWidth - TileGap / 2, 0, -TileGap / 2, 0);
         _list.HorizontalAlignment = HorizontalAlignment.Center;
         _body.Height = TileHeight * VisibleRows + TileGap * (VisibleRows - 1);
         ((FrameworkElement)Content).Width = _width;
@@ -237,7 +247,8 @@ public sealed class TileView : StackPanel
         if (glyph != IconKind.None) square.Child = new Ui.Icon { Kind = glyph, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         else
         {
-            var image = new Image { Width = 24, Height = 24, Source = AppCatalog.Instance.Icon(app.Target, ShellWindow.IconPixels) };
+            var image = new Image { Width = 24, Height = 24 };
+            image.Source = AppCatalog.Instance.IconAsync(app.Target, ShellWindow.IconPixels, icon => { if (App == app) image.Source = icon; });
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
             square.Child = image;
         }

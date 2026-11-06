@@ -125,8 +125,9 @@ ISL_RIGHT = ISL_LEFT + ISL_W
 SIDE_W = 408
 SIDE_LEFT = ISL_RIGHT - SIDE_W
 MENU_W = max(ISL_W, 640)
-MENU_COLS = max(1, (MENU_W - 48 + 4) // 104)
-MENU_TILE = (MENU_W - 48 - 4 * (MENU_COLS - 1)) // MENU_COLS
+# Як в оболонці: поля 24 з боків і ще по 8 під смугу прокрутки, плитки від 100 px з кроком 4.
+MENU_COLS = max(1, (MENU_W - 48 - 16 + 4) // 104)
+MENU_TILE = (MENU_W - 48 - 16 - 4 * (MENU_COLS - 1)) // MENU_COLS
 
 
 def island(t, active=None):

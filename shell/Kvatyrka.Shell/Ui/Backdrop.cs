@@ -28,7 +28,7 @@ public static class Backdrop
                 Changed?.Invoke();
                 return;
             }
-            var screen = new Size(SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
+            var screen = Windows.ShellWindow.Screen;
             var height = (int)Math.Round(Width * screen.Height / screen.Width);
 
             var src = new BitmapImage();
@@ -88,7 +88,7 @@ public static class Backdrop
     public static Brush? For(Rect screenRect)
     {
         if (Image is null) return null;
-        var k = Image.PixelWidth / SystemParameters.PrimaryScreenWidth;
+        var k = Image.PixelWidth / Windows.ShellWindow.Screen.Width;
         var brush = new ImageBrush(Image)
         {
             ViewboxUnits = BrushMappingMode.Absolute,

@@ -26,11 +26,11 @@ public sealed class Glass : Border
         {
             _window = Window.GetWindow(this);
             if (_window is not null) _window.LocationChanged += (_, _) => Refresh();
-            Backdrop.Changed += Refresh;
+            Backdrop.Changed += ForceRefresh;
             Theme.Changed += ForceRefresh;
             Refresh();
         };
-        Unloaded += (_, _) => { Backdrop.Changed -= Refresh; Theme.Changed -= ForceRefresh; };
+        Unloaded += (_, _) => { Backdrop.Changed -= ForceRefresh; Theme.Changed -= ForceRefresh; };
         SizeChanged += (_, _) => Refresh();
     }
 

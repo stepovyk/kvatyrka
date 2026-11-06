@@ -14,7 +14,8 @@ internal static class ShellItems
     private static readonly Guid IID_IPropertyStore = new("886d8eeb-8cf2-4446-8d02-cdba1dbdcf99");
     private static readonly PROPERTYKEY PKEY_AppUserModel_ID = new(new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 5);
 
-    public enum SIGDN : uint { NORMALDISPLAY = 0, PARSINGNAME = 0x80058000 }
+    // PARENTRELATIVEPARSING дає AUMID або «{FOLDERID}\…\app.exe» – саме те, що розуміє «shell:AppsFolder\…».
+    public enum SIGDN : uint { NORMALDISPLAY = 0, PARENTRELATIVEPARSING = 0x80018001 }
 
     [Flags]
     private enum SIIGBF { ResizeToFit = 0, BiggerSizeOk = 1, IconOnly = 4 }
@@ -88,7 +89,7 @@ internal static class ShellItems
         while (en.Next(1, out var item, out var fetched) == 0 && fetched == 1)
         {
             var name = DisplayName(item, SIGDN.NORMALDISPLAY);
-            var parsing = DisplayName(item, SIGDN.PARSINGNAME);
+            var parsing = DisplayName(item, SIGDN.PARENTRELATIVEPARSING);
             if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(parsing)) result.Add(new Entry(name, parsing));
             Marshal.ReleaseComObject(item);
         }
