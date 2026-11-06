@@ -1,0 +1,118 @@
+{
+  "name": "Кватирка для GIGANT",
+  "description": "Під ПК GIGANT (AMD Radeon RX 7600 XT): з Microsoft лише Store і Edge, усе для ігор уже всередині.",
+  "edition": "Pro",
+  "keepApps": [
+    "Microsoft.WindowsStore",
+    "Microsoft.StorePurchaseApp",
+    "Microsoft.SecHealthUI",
+    "Microsoft.HEIFImageExtension",
+    "Microsoft.HEVCVideoExtension",
+    "Microsoft.WebMediaExtensions",
+    "Microsoft.WebpImageExtension",
+    "Microsoft.VP9VideoExtensions",
+    "Microsoft.AV1VideoExtension",
+    "Microsoft.MPEG2VideoExtension",
+    "Microsoft.RawImageExtension",
+    "Microsoft.VCLibs.*",
+    "Microsoft.UI.Xaml.*",
+    "Microsoft.NET.Native.*",
+    "Microsoft.WindowsAppRuntime.*",
+    "Microsoft.MicrosoftEdge.*"
+  ],
+  "privacy": {
+    "minimalTelemetry": true,
+    "noAds": true,
+    "noCopilot": true,
+    "noWidgets": true,
+    "noBingInSearch": true,
+    "noOneDrive": true,
+    "noTeamsAndOutlookAutoInstall": true
+  },
+  "system": {
+    "localAccountAllowed": true,
+    "hibernation": false,
+    "fastStartup": false,
+    "driversFromWindowsUpdate": false,
+    "memoryIntegrity": true,
+    "gameMode": true,
+    "systemRestore": false,
+    "recoveryEnvironment": false
+  },
+  "folders": [
+    "C:\\DEO\\Downloads",
+    "C:\\DEO\\Programs",
+    "C:\\DEO\\Games"
+  ],
+  "drivers": "drivers\\gigant",
+  "wallpaper": "assets\\wheat-field-sunset.jpg",
+  "packages": [
+    {
+      "name": "Visual C++ 2008 (x64)",
+      "url": "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe",
+      "args": "/q"
+    },
+    {
+      "name": "Visual C++ 2008 (x86)",
+      "url": "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x86.exe",
+      "args": "/q"
+    },
+    {
+      "name": "Visual C++ 2010 (x64)",
+      "url": "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe",
+      "args": "/q /norestart"
+    },
+    {
+      "name": "Visual C++ 2010 (x86)",
+      "url": "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe",
+      "args": "/q /norestart"
+    },
+    {
+      "name": "Visual C++ 2012 (x64)",
+      "url": "https://download.microsoft.com/download/1/6/B/16B06F60-3B20-4FF2-B699-5E9B7962F9AE/VSU_4/vcredist_x64.exe",
+      "args": "/install /quiet /norestart"
+    },
+    {
+      "name": "Visual C++ 2012 (x86)",
+      "url": "https://download.microsoft.com/download/1/6/B/16B06F60-3B20-4FF2-B699-5E9B7962F9AE/VSU_4/vcredist_x86.exe",
+      "args": "/install /quiet /norestart"
+    },
+    {
+      "name": "Visual C++ 2013 (x64)",
+      "url": "https://aka.ms/highdpimfc2013x64enu",
+      "args": "/install /quiet /norestart"
+    },
+    {
+      "name": "Visual C++ 2013 (x86)",
+      "url": "https://aka.ms/highdpimfc2013x86enu",
+      "args": "/install /quiet /norestart"
+    },
+    {
+      "name": "Visual C++ 2015–2026 (x64)",
+      "url": "https://aka.ms/vc14/vc_redist.x64.exe",
+      "args": "/install /quiet /norestart"
+    },
+    {
+      "name": "Visual C++ 2015–2026 (x86)",
+      "url": "https://aka.ms/vc14/vc_redist.x86.exe",
+      "args": "/install /quiet /norestart"
+    },
+    {
+      "name": "DirectX для старих ігор (червень 2010)",
+      "url": "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe",
+      "args": "/Q /T:\"{dir}\"",
+      "then": "DXSETUP.exe /silent"
+    },
+    {
+      "name": ".NET Desktop Runtime 8",
+      "url": "https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe",
+      "args": "/install /quiet /norestart"
+    },
+    {
+      "name": ".NET Desktop Runtime 10",
+      "url": "https://aka.ms/dotnet/10.0/windowsdesktop-runtime-win-x64.exe",
+      "args": "/install /quiet /norestart"
+    }
+  ],
+  "kvatyrka": true
+}

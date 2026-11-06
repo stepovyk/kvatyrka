@@ -1,0 +1,69 @@
+{
+  "name": "Кватирка",
+  "description": "Для будь-якого ПК: без реклами, нав'язаних програм і стеження, усе корисне лишається.",
+  "edition": "Pro",
+  "keepApps": [
+    "Microsoft.WindowsStore",
+    "Microsoft.StorePurchaseApp",
+    "Microsoft.DesktopAppInstaller",
+    "Microsoft.SecHealthUI",
+    "Microsoft.WindowsNotepad",
+    "Microsoft.WindowsCalculator",
+    "Microsoft.Windows.Photos",
+    "Microsoft.Paint",
+    "Microsoft.ScreenSketch",
+    "Microsoft.WindowsTerminal",
+    "Microsoft.ZuneMusic",
+    "Microsoft.XboxIdentityProvider",
+    "Microsoft.Xbox.TCUI",
+    "Microsoft.HEIFImageExtension",
+    "Microsoft.HEVCVideoExtension",
+    "Microsoft.WebMediaExtensions",
+    "Microsoft.WebpImageExtension",
+    "Microsoft.VP9VideoExtensions",
+    "Microsoft.AV1VideoExtension",
+    "Microsoft.MPEG2VideoExtension",
+    "Microsoft.RawImageExtension",
+    "Microsoft.VCLibs.*",
+    "Microsoft.UI.Xaml.*",
+    "Microsoft.NET.Native.*",
+    "Microsoft.WindowsAppRuntime.*",
+    "Microsoft.ApplicationCompatibilityEnhancements",
+    "Microsoft.MicrosoftEdge.*"
+  ],
+  "privacy": {
+    "minimalTelemetry": true,
+    "noAds": true,
+    "noCopilot": true,
+    "noWidgets": true,
+    "noBingInSearch": true,
+    "noOneDrive": true,
+    "noTeamsAndOutlookAutoInstall": true
+  },
+  "system": {
+    "localAccountAllowed": true,
+    "hibernation": true,
+    "fastStartup": true,
+    "driversFromWindowsUpdate": true,
+    "memoryIntegrity": true,
+    "gameMode": true,
+    "systemRestore": true,
+    "recoveryEnvironment": true
+  },
+  "folders": [],
+  "drivers": "",
+  "wallpaper": "assets\\wheat-field-sunset.jpg",
+  "packages": [
+    {
+      "name": "Visual C++ 2015–2026 (x64)",
+      "url": "https://aka.ms/vc14/vc_redist.x64.exe",
+      "args": "/install /quiet /norestart"
+    },
+    {
+      "name": "Visual C++ 2015–2026 (x86)",
+      "url": "https://aka.ms/vc14/vc_redist.x86.exe",
+      "args": "/install /quiet /norestart"
+    }
+  ],
+  "kvatyrka": true
+}

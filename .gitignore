@@ -1,0 +1,9 @@
+bin/
+obj/
+out/
+*.user
+.vs/
+__pycache__/
+builder/shell/
+builder/drivers/
+snapshots/

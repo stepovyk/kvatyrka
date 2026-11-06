@@ -1,0 +1,83 @@
+name: Збірка
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  shell:
+    name: Оболонка
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Іконки збігаються з дизайном
+        shell: pwsh
+        run: |
+          python design/icons_cs.py
+          git diff --exit-code -- shell/Kvatyrka.Shell/Ui/Icons.g.cs
+
+      - name: Збірка без попереджень
+        run: dotnet build shell/Kvatyrka.Shell -c Release
+
+      - name: Окремий Kvatyrka.exe
+        run: >
+          dotnet publish shell/Kvatyrka.Shell -c Release -o publish
+          -p:SelfContained=true -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+          -p:DebugType=none
+
+      - name: Знімки острова й панелей
+        shell: pwsh
+        run: |
+          $p = Start-Process publish\Kvatyrka.exe -ArgumentList '--snapshot', "$PWD\snapshots" -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "Kvatyrka.exe завершилась з кодом $($p.ExitCode)" }
+          Get-ChildItem snapshots
+          if ((Get-ChildItem snapshots -Filter *.png).Count -lt 8) { throw 'Не всі знімки зроблено' }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kvatyrka
+          path: publish/Kvatyrka.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: snapshots
+          path: snapshots/
+
+  builder:
+    name: Збирач ISO
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Синтаксис і логіка профілів
+        shell: pwsh
+        run: |
+          $env:KV_PROFILES = "$PWD\builder\profiles"
+          dotnet run --project tests/BuilderCheck -- builder/Build-Kvatyrka.ps1 tests/BuilderCheck/check.ps1
+
+      - name: Перевірка профілів у Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force builder\shell | Out-Null
+          Set-Content builder\shell\Kvatyrka.exe 'stub'
+          Set-Content dummy.iso 'stub'
+          foreach ($c in 'universal', 'gigant') { .\builder\Build-Kvatyrka.ps1 -Iso dummy.iso -Config $c -Check }
