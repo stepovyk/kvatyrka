@@ -73,11 +73,13 @@ public static class Snapshot
         Services.Log.Write($"Знімок: {name}");
     }
 
+    // Дочекатися, доки вікно домалюється. Якщо програма не затихає (напр. хтось безперервно міняє вікна), – не довше 3 с.
     private static void Settle()
     {
-        for (var i = 0; i < 3; i++) Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+        var limit = TimeSpan.FromSeconds(3);
+        for (var i = 0; i < 3; i++) Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle, CancellationToken.None, limit);
         Thread.Sleep(150);
-        Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+        Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle, CancellationToken.None, limit);
     }
 
     private static void Save(Window w, string path)

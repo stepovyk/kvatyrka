@@ -3,6 +3,7 @@ name: Збірка
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -14,9 +15,9 @@ jobs:
     name: Рушій і каталог
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
@@ -27,13 +28,13 @@ jobs:
     name: Оболонка
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -62,12 +63,12 @@ jobs:
           Get-ChildItem snapshots
           if ((Get-ChildItem snapshots -Filter *.png).Count -lt 12) { throw 'Не всі знімки зроблено' }
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: Kvatyrka
           path: publish/Kvatyrka.exe
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: snapshots
@@ -77,9 +78,9 @@ jobs:
     name: Збирач ISO
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
@@ -96,3 +97,24 @@ jobs:
           Set-Content builder\shell\Kvatyrka.exe 'stub'
           Set-Content dummy.iso 'stub'
           foreach ($c in 'universal', 'gigant') { .\builder\Build-Kvatyrka.ps1 -Iso dummy.iso -Config $c -Check }
+
+  release:
+    name: Реліз
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [core, shell, builder]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          name: Kvatyrka
+
+      - name: Kvatyrka.exe у реліз
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha256sum Kvatyrka.exe > Kvatyrka.exe.sha256
+          gh release create "$GITHUB_REF_NAME" Kvatyrka.exe Kvatyrka.exe.sha256 -R "$GITHUB_REPOSITORY" --title "Кватирка ${GITHUB_REF_NAME#v}" --notes-file - <<'NOTES'
+          Windows 11 без зайвого: покращення з поверненням, охоронець після оновлень, прибирання нав'язаних програм. Острів – за бажанням.
+
+          Windows 11 without the clutter: reversible improvements, a guardian that re-applies your choices after updates, bloatware removal. Optional island taskbar.
+          NOTES

@@ -121,6 +121,10 @@ dotnet publish shell/Kvatyrka.Shell -c Release -o publish -p:SelfContained=true 
 
 Шпалери за замовчуванням – [фото з Unsplash](https://images.unsplash.com/photo-1500382017468-9049fed747ef) за [ліцензією Unsplash](https://unsplash.com/license).
 
+## Ліцензія
+
+Код – [MIT](LICENSE). Шрифт Inter – SIL Open Font License (`shell/Kvatyrka.Shell/Assets/Fonts/OFL.txt`).
+
 ## Подякувати
 
 Кватирку робить Stepovyk. Підтримати: [Monobank](https://send.monobank.ua/jar/8aeC9dGFrn) · [Приват24](https://www.privat24.ua/send/kkyqm)

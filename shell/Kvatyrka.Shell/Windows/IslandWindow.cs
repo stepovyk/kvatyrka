@@ -119,9 +119,13 @@ public sealed class IslandWindow : ShellWindow
     }
 
     // Порядок: знак, розділювач, закріплені, запущені, розділювач, швидкі налаштування, мова, годинник.
-    public void Rebuild()
+    public void Rebuild() => Rebuild(WindowTracker.Snapshot());
+
+    // Без рекурсії: знімок вікон береться один раз, і перебудова не викликає сама себе знову,
+    // навіть якщо якась програма безперервно показує й ховає вікна.
+    private void Rebuild(List<AppWindow> windows)
     {
-        _windows = WindowTracker.Snapshot();
+        _windows = windows;
         var pins = App.Current.Settings.Pinned;
         var running = _windows
             .Where(w => !pins.Any(p => WindowTracker.Matches(p, w)))
@@ -144,7 +148,7 @@ public sealed class IslandWindow : ShellWindow
             Add(_clockButton);
         }
         UpdateStates();
-        Tick();
+        UpdateClock();
     }
 
     // Між комірками space-4; розділювач має ще по 6 з кожного боку. Поля задаються щоразу заново, не накопичуються.
@@ -230,22 +234,23 @@ public sealed class IslandWindow : ShellWindow
 
     private void Tick()
     {
-        UpdateFullscreen();
-        var now = DateTime.Now;
-        _time.Text = now.ToString("HH:mm", Uk);
-        _date.Text = $"{Uk.DateTimeFormat.GetAbbreviatedDayName(now.DayOfWeek).ToLower(Uk)}, {now.ToString("d MMMM", Uk)}";
-        _lang.Text = SystemState.InputLanguage();
+        UpdateClock();
         var snapshot = WindowTracker.Snapshot();
-        if (!snapshot.Select(w => w.Handle).ToHashSet().SetEquals(_windows.Select(w => w.Handle)))
-        {
-            _windows = snapshot;
-            Rebuild();
-        }
+        if (!snapshot.Select(w => w.Handle).ToHashSet().SetEquals(_windows.Select(w => w.Handle))) Rebuild(snapshot);
         else
         {
             _windows = snapshot;
             UpdateStates();
         }
+    }
+
+    private void UpdateClock()
+    {
+        UpdateFullscreen();
+        var now = DateTime.Now;
+        _time.Text = now.ToString("HH:mm", Uk);
+        _date.Text = $"{Uk.DateTimeFormat.GetAbbreviatedDayName(now.DayOfWeek).ToLower(Uk)}, {now.ToString("d MMMM", Uk)}";
+        _lang.Text = SystemState.InputLanguage();
     }
 
     // Острів по центру внизу, на space-16 від краю екрана.

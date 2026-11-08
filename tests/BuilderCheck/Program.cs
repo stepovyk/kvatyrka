@@ -13,4 +13,5 @@ try { foreach (var o in ps.Invoke()) Console.WriteLine(o); }
 catch (Exception ex) { Console.WriteLine("ВИНЯТОК: " + ex.Message); return 2; }
 foreach (var e in ps.Streams.Error) Console.WriteLine("ПОМИЛКА: " + e);
 foreach (var i in ps.Streams.Information) Console.WriteLine(i);
-return ps.HadErrors ? 3 : 0;
+// Перехоплені в самій перевірці винятки (негативні випадки) – не помилка; помилка – лише те, що дійшло до потоку помилок.
+return ps.Streams.Error.Count > 0 ? 3 : 0;
