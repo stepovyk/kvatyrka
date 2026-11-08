@@ -57,6 +57,7 @@ jobs:
         shell: pwsh
         run: |
           $p = Start-Process publish\Kvatyrka.exe -ArgumentList '--snapshot', "$PWD\snapshots" -PassThru -Wait
+          if (Test-Path snapshots\hang.txt) { throw "Знімки зависли на кроці: $(Get-Content snapshots\hang.txt)" }
           if ($p.ExitCode -ne 0) { throw "Kvatyrka.exe завершилась з кодом $($p.ExitCode)" }
           Get-ChildItem snapshots
           if ((Get-ChildItem snapshots -Filter *.png).Count -lt 12) { throw 'Не всі знімки зроблено' }
@@ -67,6 +68,7 @@ jobs:
           path: publish/Kvatyrka.exe
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: snapshots
           path: snapshots/

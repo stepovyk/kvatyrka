@@ -15,7 +15,12 @@ public static class Snapshot
     {
         Directory.CreateDirectory(dir);
         // Знімки не мають висіти вічно: якщо щось зациклилось, видно, на якому кроці.
-        var watchdog = new Timer(_ => { Services.Log.Write($"Знімки зависли на кроці: {_step}"); Environment.Exit(3); }, null, TimeSpan.FromMinutes(2), Timeout.InfiniteTimeSpan);
+        var watchdog = new Timer(_ =>
+        {
+            Services.Log.Write($"Знімки зависли на кроці: {_step}");
+            try { File.WriteAllText(Path.Combine(dir, "hang.txt"), _step); } catch (IOException) { }
+            Environment.Exit(3);
+        }, null, TimeSpan.FromMinutes(2), Timeout.InfiniteTimeSpan);
         foreach (var theme in new[] { Services.Appearance.Dark, Services.Appearance.Light })
         {
             App.Current.Settings.Theme = theme;
