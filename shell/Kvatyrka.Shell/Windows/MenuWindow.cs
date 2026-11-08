@@ -152,6 +152,8 @@ public sealed class MenuWindow : PopupWindow
         return t;
     }
 
+    private int _cols;
+
     protected override void OnOpening()
     {
         _search.Text = string.Empty;
@@ -160,6 +162,15 @@ public sealed class MenuWindow : PopupWindow
         var inner = _width - 2 * (Pad + 1) - 2 * (ScrollBarWidth + 2);
         var cols = Math.Max(1, (int)((inner + TileGap) / (MinTile + TileGap)));
         TileView.TileWidth = Math.Floor((inner - TileGap * (cols - 1)) / cols);
+        // Рівно cols колонок: сітка з фіксованою кількістю, а не перенесення, що губить колонку через долю пікселя.
+        if (cols != _cols)
+        {
+            _cols = cols;
+            var grid = new FrameworkElementFactory(typeof(System.Windows.Controls.Primitives.UniformGrid));
+            grid.SetValue(System.Windows.Controls.Primitives.UniformGrid.ColumnsProperty, cols);
+            grid.SetValue(VerticalAlignmentProperty, VerticalAlignment.Top);
+            _list.ItemsPanel = new ItemsPanelTemplate(grid);
+        }
         // Кожна плитка має поле 2 з боків, тож крок між ними space-4. Смуга прокрутки стоїть праворуч поза сіткою,
         // а ліве поле зсуває все так, щоб саме сітка, а не сітка зі смугою, була рівно по центру.
         _list.Width = (TileView.TileWidth + TileGap) * cols + ScrollBarWidth + 1; // +1: округлення до пікселів при 125/150 %

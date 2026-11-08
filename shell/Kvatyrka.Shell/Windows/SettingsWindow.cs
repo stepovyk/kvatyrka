@@ -58,7 +58,8 @@ public sealed class SettingsWindow : Window
 
         // Вікно вміщається в робочу область навіть на маленьких екранах.
         var height = Math.Min(640, Math.Floor(SystemParameters.WorkArea.Height - 32));
-        var frame = new Border { Width = FrameWidth, Height = height, CornerRadius = new CornerRadius(16), BorderThickness = new Thickness(1), Margin = new Thickness(ShellWindow.ShadowMargin) };
+        var width = Math.Min(FrameWidth, Math.Floor(SystemParameters.WorkArea.Width - 32));
+        var frame = new Border { Width = width, Height = height, CornerRadius = new CornerRadius(16), BorderThickness = new Thickness(1), Margin = new Thickness(ShellWindow.ShadowMargin) };
         frame.SetResourceReference(Border.BackgroundProperty, "window");
         frame.SetResourceReference(Border.BorderBrushProperty, "border");
         frame.SetResourceReference(EffectProperty, "shadow-window");
