@@ -7,17 +7,40 @@ using Kvatyrka.Shell.Windows;
 
 namespace Kvatyrka.Shell;
 
-// «Kvatyrka.exe --snapshot <папка>»: показує острів і кожну панель та зберігає їх у PNG для перевірки вигляду.
+// «Kvatyrka.exe --snapshot <папка>»: показує вікно Кватирки, острів і кожну панель та зберігає їх у PNG для перевірки вигляду.
+// Нічого в системі не змінює.
 public static class Snapshot
 {
     public static void Run(string dir)
     {
         Directory.CreateDirectory(dir);
+        foreach (var theme in new[] { Services.Appearance.Dark, Services.Appearance.Light })
+        {
+            App.Current.Settings.Theme = theme;
+            Ui.Theme.Apply(App.Current.Settings);
+            var t = theme.ToString().ToLowerInvariant();
+            var settings = new SettingsWindow();
+            settings.Show();
+            var sections = theme == Services.Appearance.Dark
+                ? new[] { SettingsWindow.HomeSection, "start", "privacy", "system", SettingsWindow.AppsSection, SettingsWindow.IslandSection }
+                : new[] { SettingsWindow.HomeSection, "start" };
+            foreach (var s in sections)
+            {
+                settings.Section = s;
+                Settle();
+                // Список програм читається у фоні – чекаємо, доки з'явиться.
+                if (s == SettingsWindow.AppsSection) { Thread.Sleep(1500); Settle(); }
+                Save(settings, Path.Combine(dir, $"window-{s}-{t}.png"));
+            }
+            settings.Close();
+        }
+
+        App.Current.Settings.Theme = Services.Appearance.Dark;
+        Ui.Theme.Apply(App.Current.Settings);
         var island = new IslandWindow();
         island.Show();
         Settle();
         Save(island, Path.Combine(dir, "island.png"));
-
         foreach (var (name, popup) in new[] { ("menu", island.Menu), ("quick", island.Quick), ("clock", island.Clock) })
         {
             popup.Toggle();
@@ -26,21 +49,7 @@ public static class Snapshot
             popup.HidePopup();
             Settle();
         }
-
-        foreach (var theme in new[] { Services.Appearance.Dark, Services.Appearance.Light })
-        {
-            App.Current.Settings.Theme = theme;
-            Ui.Theme.Apply(App.Current.Settings);
-            var settings = new SettingsWindow();
-            settings.Show();
-            Settle();
-            Save(settings, Path.Combine(dir, $"settings-{theme.ToString().ToLowerInvariant()}.png"));
-            settings.Close();
-            island.Rebuild();
-            Settle();
-            Save(island, Path.Combine(dir, $"island-{theme.ToString().ToLowerInvariant()}.png"));
-        }
-        island.Close();
+        island.Retire();
     }
 
     private static void Settle()

@@ -13,8 +13,6 @@ public static class SystemState
     private const string GameBarKey = @"Software\Microsoft\GameBar";
     private const string ToastsKey = @"Software\Microsoft\Windows\CurrentVersion\Notifications\Settings";
     private const string PersonalizeKey = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
-    private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string RunName = "Kvatyrka";
 
     private static int? ReadDword(string key, string name)
     {
@@ -64,21 +62,6 @@ public static class SystemState
                 .OrderBy(n => n.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 ? 1 : 0)
                 .FirstOrDefault(n => n.GetIPProperties().GatewayAddresses.Count > 0);
             return nic is null ? "Немає мережі" : nic.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 ? "Wi-Fi" : "Мережа";
-        }
-    }
-
-    public static bool StartWithWindows
-    {
-        get
-        {
-            using var k = Registry.CurrentUser.OpenSubKey(RunKey);
-            return k?.GetValue(RunName) is string;
-        }
-        set
-        {
-            using var k = Registry.CurrentUser.CreateSubKey(RunKey, true);
-            if (value && Environment.ProcessPath is { } exe) k.SetValue(RunName, $"\"{exe}\"");
-            else k.DeleteValue(RunName, false);
         }
     }
 

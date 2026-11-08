@@ -10,6 +10,19 @@ permissions:
   contents: write
 
 jobs:
+  core:
+    name: Рушій і каталог
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Тести рушія, каталогу й профілів
+        run: dotnet test tests/Kvatyrka.Core.Tests -c Release
+
   shell:
     name: Оболонка
     runs-on: windows-latest
@@ -40,13 +53,13 @@ jobs:
           -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
           -p:DebugType=none
 
-      - name: Знімки острова й панелей
+      - name: Знімки вікна, острова й панелей
         shell: pwsh
         run: |
           $p = Start-Process publish\Kvatyrka.exe -ArgumentList '--snapshot', "$PWD\snapshots" -PassThru -Wait
           if ($p.ExitCode -ne 0) { throw "Kvatyrka.exe завершилась з кодом $($p.ExitCode)" }
           Get-ChildItem snapshots
-          if ((Get-ChildItem snapshots -Filter *.png).Count -lt 8) { throw 'Не всі знімки зроблено' }
+          if ((Get-ChildItem snapshots -Filter *.png).Count -lt 12) { throw 'Не всі знімки зроблено' }
 
       - uses: actions/upload-artifact@v4
         with:

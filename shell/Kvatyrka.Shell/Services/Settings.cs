@@ -19,11 +19,12 @@ public sealed class PinnedApp
 // Усі налаштування користувача в одному файлі %APPDATA%\Kvatyrka\settings.json – їх можна міняти й руками.
 public sealed class Settings
 {
-    public int Version { get; set; } = 1;
+    public int Version { get; set; } = 2;
     public Appearance Theme { get; set; } = Appearance.Auto;
     public string Accent { get; set; } = "#5B9BFF";
-    public bool ReplaceTaskbar { get; set; } = true;
-    public bool StartWithWindows { get; set; } = true;
+
+    // Острів замість панелі задач Windows – за бажанням, типово вимкнений.
+    public bool Island { get; set; }
     public bool WinKeyOpensMenu { get; set; } = true;
     public bool Transparency { get; set; } = true;
     public List<PinnedApp> Pinned { get; set; } = new();
@@ -91,14 +92,17 @@ public static class Log
 {
     private static readonly object Gate = new();
 
+    // Журнал людини – у її профілі; процеси адміністратора й системи пишуть у спільний для ПК.
+    public static string Path { get; set; } = System.IO.Path.Combine(Settings.Folder, "kvatyrka.log");
+
     public static void Write(string message)
     {
         try
         {
             lock (Gate)
             {
-                Directory.CreateDirectory(Settings.Folder);
-                var path = Path.Combine(Settings.Folder, "kvatyrka.log");
+                var path = Path;
+                Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
                 if (File.Exists(path) && new FileInfo(path).Length > 512 * 1024) File.Delete(path);
                 File.AppendAllText(path, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {message}{Environment.NewLine}");
             }

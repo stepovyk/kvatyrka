@@ -4,9 +4,11 @@
     Збирає чистий образ Кватирки з офіційного ISO Windows 11.
 
 .DESCRIPTION
-    Бере ваш офіційний ISO від Microsoft і робить з нього свій: прибирає рекламу й нав'язані програми,
-    вимикає стеження, додає потрібні компоненти й оболонку Кватирки. Що саме робити – описано в профілі
-    (builder\profiles\*.json), його можна скопіювати й змінити під себе.
+    Бере ваш офіційний ISO від Microsoft і робить з нього свій: прибирає нав'язані програми, вмикає
+    покращення Кватирки (без реклами, зайвого стеження й підказок), додає потрібні компоненти й саму
+    Кватирку з охоронцем, який після оновлень Windows повертає ваш вибір. Що саме робити – описано
+    в профілі (builder\profiles\*.json), його можна скопіювати й змінити під себе. Покращення – ті самі,
+    що й у вікні Кватирки (catalog\catalog.json), і застосовує їх той самий Kvatyrka.exe.
 
 .EXAMPLE
     .\Build-Kvatyrka.ps1 -Iso D:\Win11_26H2_Ukrainian_x64.iso
@@ -43,8 +45,16 @@ function Read-Config([string]$NameOrPath) {
     $path = if (Test-Path $NameOrPath) { $NameOrPath } else { Join-Path $PSScriptRoot "profiles\$NameOrPath.json" }
     if (-not (Test-Path $path)) { Fail "Немає профілю «$NameOrPath». Є: $((Get-ChildItem (Join-Path $PSScriptRoot 'profiles') -Filter *.json).BaseName -join ', ')" }
     $cfg = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
-    foreach ($key in 'name', 'edition', 'keepApps', 'privacy', 'system', 'folders', 'drivers', 'wallpaper', 'packages', 'kvatyrka') {
+    foreach ($key in 'name', 'edition', 'keepApps', 'image', 'tweaks', 'registry', 'folders', 'drivers', 'wallpaper', 'packages', 'kvatyrka') {
         if (-not ($cfg.PSObject.Properties.Name -contains $key)) { Fail "У профілі $path немає поля «$key»" }
+    }
+    foreach ($key in 'localAccount', 'removeOneDrive', 'blockOutlookAndDevHome', 'recoveryEnvironment') {
+        if (-not ($cfg.image.PSObject.Properties.Name -contains $key)) { Fail "У профілі $path немає поля «image.$key»" }
+    }
+    # Без Game Bar Windows при кожній грі просить його встановити, якщо не вимкнути запис ігор.
+    $gameBar = $cfg.keepApps | Where-Object { 'Microsoft.XboxGamingOverlay' -like $_ }
+    if (-not $gameBar -and -not (@($cfg.tweaks.on) -contains 'games.noCapture')) {
+        Fail "У профілі $path прибрано Game Bar – додайте «games.noCapture» у tweaks.on"
     }
     $cfg | Add-Member -NotePropertyName Path -NotePropertyValue (Resolve-Path $path).Path
     return $cfg
@@ -89,9 +99,10 @@ function Set-Reg([string]$Key, [string]$Name, $Value, [string]$Type = 'DWord') {
     finally { $k.Dispose() }
 }
 
+# $true – ключа більше немає (прибрано або й не було).
 function Remove-RegKey([string]$Key) {
-    try { [Microsoft.Win32.Registry]::LocalMachine.DeleteSubKeyTree($Key, $false) }
-    catch { Write-Note "Не вдалося прибрати $Key ($($_.Exception.Message))" }
+    try { [Microsoft.Win32.Registry]::LocalMachine.DeleteSubKeyTree($Key, $false); return $true }
+    catch { Write-Warning "Не вдалося прибрати $Key ($($_.Exception.Message))"; return $false }
 }
 
 function Remove-RegValue([string]$Key, [string]$Name) {
@@ -99,91 +110,40 @@ function Remove-RegValue([string]$Key, [string]$Name) {
     if ($k) { try { $k.DeleteValue($Name, $false) } finally { $k.Dispose() } }
 }
 
-function Set-Policies($cfg) {
-    $sw = 'KV_SOFTWARE'; $sys = 'KV_SYSTEM\ControlSet001'; $usr = 'KV_USER'
-    $p = $cfg.privacy; $s = $cfg.system
-
-    if ($p.minimalTelemetry) {
-        Set-Reg "$sw\Policies\Microsoft\Windows\DataCollection" 'AllowTelemetry' 1
-        Set-Reg "$sw\Policies\Microsoft\Windows\DataCollection" 'DoNotShowFeedbackNotifications' 1
-        Set-Reg "$sw\Policies\Microsoft\Windows\AdvertisingInfo" 'DisabledByGroupPolicy' 1
-        Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\Privacy" 'TailoredExperiencesWithDiagnosticDataEnabled' 0
-        Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo" 'Enabled' 0
-        Write-Note 'Телеметрія – мінімально дозволена, рекламний ідентифікатор вимкнено'
+# Те, що має сенс лише в новому образі; решту покращень застосовує Kvatyrka.exe з каталогу.
+function Set-ImageOnly($cfg) {
+    $sw = 'KV_SOFTWARE'; $usr = 'KV_USER'
+    $img = $cfg.image
+    if ($img.localAccount) {
+        Set-Reg "$sw\Microsoft\Windows\CurrentVersion\OOBE" 'BypassNRO' 1
+        Write-Note 'Під час встановлення можна створити локальний акаунт'
     }
-    if ($p.noAds) {
-        $cloud = "$sw\Policies\Microsoft\Windows\CloudContent"
-        foreach ($n in 'DisableConsumerAccountStateContent', 'DisableCloudOptimizedContent') { Set-Reg $cloud $n 1 }
-        $cdm = "$usr\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
-        foreach ($n in 'ContentDeliveryAllowed', 'OemPreInstalledAppsEnabled', 'PreInstalledAppsEnabled', 'PreInstalledAppsEverEnabled', 'SilentInstalledAppsEnabled',
-            'SoftLandingEnabled', 'SystemPaneSuggestionsEnabled', 'SubscribedContentEnabled', 'SubscribedContent-310093Enabled', 'SubscribedContent-338388Enabled',
-            'SubscribedContent-338389Enabled', 'SubscribedContent-338393Enabled', 'SubscribedContent-353694Enabled', 'SubscribedContent-353696Enabled') { Set-Reg $cdm $n 0 }
-        Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" 'Start_IrisRecommendations' 0
-        Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" 'ShowSyncProviderNotifications' 0
-        Remove-RegKey "$usr\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager\Subscriptions"
-        Remove-RegKey "$usr\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager\SuggestedApps"
-        Write-Note 'Реклама, «рекомендації» й тихе встановлення програм – вимкнено'
-    }
-    if ($p.noCopilot) {
-        Set-Reg "$sw\Policies\Microsoft\Windows\WindowsCopilot" 'TurnOffWindowsCopilot' 1
-        Set-Reg "$usr\Software\Policies\Microsoft\Windows\WindowsCopilot" 'TurnOffWindowsCopilot' 1
-        Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" 'ShowCopilotButton' 0
-        Set-Reg "$sw\Policies\Microsoft\Windows\WindowsAI" 'DisableAIDataAnalysis' 1
-        Write-Note 'Copilot і Recall – вимкнено'
-    }
-    if ($p.noWidgets) {
-        Set-Reg "$sw\Policies\Microsoft\Dsh" 'AllowNewsAndInterests' 0
-        Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" 'TaskbarDa' 0
-        Write-Note 'Віджети з новинами – вимкнено'
-    }
-    if ($p.noBingInSearch) {
-        Set-Reg "$usr\Software\Policies\Microsoft\Windows\Explorer" 'DisableSearchBoxSuggestions' 1
-        Set-Reg "$sw\Policies\Microsoft\Windows\Windows Search" 'DisableWebSearch' 1
-        Set-Reg "$sw\Policies\Microsoft\Windows\Windows Search" 'ConnectedSearchUseWeb' 0
-        Write-Note 'Пошук – лише по комп''ютеру, без Bing'
-    }
-    if ($p.noOneDrive) {
+    if ($img.removeOneDrive) {
         Remove-RegValue "$usr\Software\Microsoft\Windows\CurrentVersion\Run" 'OneDriveSetup'
         Set-Reg "$sw\Policies\Microsoft\Windows\OneDrive" 'DisableFileSyncNGSC' 1
         Write-Note 'OneDrive не встановлюється'
     }
-    if ($p.noTeamsAndOutlookAutoInstall) {
-        Set-Reg "$sw\Policies\Microsoft\Windows\Windows Chat" 'ChatIcon' 3
-        Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" 'TaskbarMn' 0
-        foreach ($k in 'OutlookUpdate', 'DevHomeUpdate') { Remove-RegKey "$sw\Microsoft\WindowsUpdate\Orchestrator\UScheduler_Oobe\$k"; Remove-RegKey "$sw\Microsoft\WindowsUpdate\Orchestrator\UScheduler\$k" }
-        Write-Note 'Teams, Outlook і Dev Home не встановлюються самі'
+    if ($img.blockOutlookAndDevHome) {
+        $ok = $true
+        foreach ($k in 'OutlookUpdate', 'DevHomeUpdate') {
+            foreach ($s in 'UScheduler_Oobe', 'UScheduler') { $ok = (Remove-RegKey "$sw\Microsoft\WindowsUpdate\Orchestrator\$s\$k") -and $ok }
+        }
+        if ($ok) { Write-Note 'Outlook і Dev Home не встановлюються самі' }
     }
+    # Заготовки «рекомендованих» програм, які Windows ставить при першому вході.
+    $ok = $true
+    foreach ($k in 'Subscriptions', 'SuggestedApps') { $ok = (Remove-RegKey "$usr\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager\$k") -and $ok }
+    if ($ok) { Write-Note 'Заготовки «рекомендованих» програм прибрано' }
+}
 
-    if ($s.localAccountAllowed) {
-        Set-Reg "$sw\Microsoft\Windows\CurrentVersion\OOBE" 'BypassNRO' 1
-        Write-Note 'Під час встановлення можна створити локальний акаунт'
-    }
-    if (-not $s.fastStartup) { Set-Reg "$sys\Control\Session Manager\Power" 'HiberbootEnabled' 0; Write-Note 'Швидкий запуск – вимкнено' }
-    if (-not $s.hibernation) { Set-Reg "$sys\Control\Power" 'HibernateEnabled' 0; Set-Reg "$sys\Control\Power" 'HibernateEnabledDefault' 0; Write-Note 'Гібернація – вимкнена' }
-    if (-not $s.driversFromWindowsUpdate) {
-        Set-Reg "$sw\Policies\Microsoft\Windows\WindowsUpdate" 'ExcludeWUDriversInQualityUpdate' 1
-        Set-Reg "$sw\Policies\Microsoft\Windows\DriverSearching" 'SearchOrderConfig' 0
-        Write-Note 'Драйвери через Windows Update – вимкнено'
-    }
-    if ($s.memoryIntegrity) {
-        Set-Reg "$sys\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" 'Enabled' 1
-        Write-Note 'Ізоляція ядра (цілісність пам''яті) – увімкнена'
-    }
-    Set-Reg "$usr\Software\Microsoft\GameBar" 'AutoGameModeEnabled' ([int][bool]$s.gameMode)
-    if (-not ($cfg.keepApps | Where-Object { 'Microsoft.XboxGamingOverlay' -like $_ })) {
-        Set-Reg "$usr\System\GameConfigStore" 'GameDVR_Enabled' 0
-        Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\GameDVR" 'AppCaptureEnabled' 0
-        Set-Reg "$sw\Policies\Microsoft\Windows\GameDVR" 'AllowGameDVR' 0
-        Write-Note 'Game Bar прибрано, запис гри вимкнено – ігровий режим працює'
-    }
-    if (-not $s.systemRestore) {
-        Set-Reg "$sw\Policies\Microsoft\Windows NT\SystemRestore" 'DisableSR' 1
-        Set-Reg "$sw\Policies\Microsoft\Windows NT\SystemRestore" 'DisableConfig' 1
-        Write-Note 'Точки відновлення – вимкнені'
-    }
-    # Провідник відкривається на «Цей ПК», розширення файлів видно.
-    Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" 'LaunchTo' 1
-    Set-Reg "$usr\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" 'HideFileExt' 0
+# Покращення з профілю застосовує сам Kvatyrka.exe – тим самим рушієм, що й вікно Кватирки.
+function Invoke-Tweaks($cfg, [string]$Exe, [string]$Dir) {
+    New-Item -ItemType Directory -Force -Path $Dir | Out-Null
+    $p = Start-Process -FilePath $Exe -ArgumentList '--image', "`"$($cfg.Path)`"", "`"$Dir`"" -Wait -PassThru
+    $report = Join-Path $Dir 'report.txt'
+    if (Test-Path $report) { Get-Content $report -Encoding UTF8 | ForEach-Object { Write-Note $_ } }
+    if ($p.ExitCode -ne 0) { Fail "Kvatyrka.exe не застосувала покращення (код $($p.ExitCode))" }
+    return @(Get-Content (Join-Path $Dir 'firstrun.txt') -Encoding UTF8 | Where-Object { $_ })
 }
 
 # ---------- пакунки ----------
@@ -210,7 +170,7 @@ function Get-Packages($cfg, [string]$Dir) {
 }
 
 # Перший запуск: SetupComplete (якщо Windows його виконає) і RunOnce як запасний шлях; виконується один раз.
-function Write-FirstRun($cfg, $packages, [string]$Root) {
+function Write-FirstRun($cfg, $packages, $commands, [string]$Root) {
     $dir = Join-Path $Root 'Windows\Setup\Scripts'
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     $lines = @(
@@ -218,30 +178,44 @@ function Write-FirstRun($cfg, $packages, [string]$Root) {
         'rem Кватирка: перший запуск після встановлення. Виконується один раз.',
         'chcp 65001 >nul',
         'if exist "%WINDIR%\Setup\Scripts\kvatyrka.done" exit /b 0',
-        'set "PKG=%WINDIR%\Setup\Scripts\packages"'
+        'set "PKG=%WINDIR%\Setup\Scripts\packages"',
+        'set "LOG=%WINDIR%\Setup\Scripts\kvatyrka-firstrun.log"',
+        '>> "%LOG%" echo %DATE% %TIME% початок'
     )
+    # Після кожного кроку – запис у журнал, якщо він не вдався (3010 – «потрібне перезавантаження», це успіх).
+    # Перенаправлення спереду: цифра в кінці назви («.NET 8») інакше стала б номером потоку. Службові символи cmd з назви прибрано.
+    function Step([string]$Name, [string]$Command) {
+        $safe = $Name -replace '[&|<>^%()"]', ''
+        return @($Command, "if errorlevel 1 if not errorlevel 3010 >> `"%LOG%`" echo [помилка %ERRORLEVEL%] $safe")
+    }
     foreach ($p in $packages) {
         $lines += "rem $($p.Name)"
         if ($p.Then) {
             $tmp = '%TEMP%\kvatyrka-' + [IO.Path]::GetFileNameWithoutExtension($p.File)
-            $lines += "start `"`" /wait `"%PKG%\$($p.File)`" $($p.Args.Replace('{dir}', $tmp))"
-            $lines += "start `"`" /wait `"$tmp\$($p.Then.Split(' ')[0])`" $(($p.Then.Split(' ') | Select-Object -Skip 1) -join ' ')"
+            $lines += Step $p.Name "start `"`" /wait `"%PKG%\$($p.File)`" $($p.Args.Replace('{dir}', $tmp))"
+            $lines += Step $p.Name "start `"`" /wait `"$tmp\$($p.Then.Split(' ')[0])`" $(($p.Then.Split(' ') | Select-Object -Skip 1) -join ' ')"
             $lines += "rd /s /q `"$tmp`""
         }
         else {
-            $lines += "start `"`" /wait `"%PKG%\$($p.File)`" $($p.Args)"
+            $lines += Step $p.Name "start `"`" /wait `"%PKG%\$($p.File)`" $($p.Args)"
         }
     }
-    if (-not $cfg.system.hibernation) { $lines += 'powercfg /hibernate off' }
-    if (-not $cfg.system.systemRestore) { $lines += 'powershell -NoProfile -Command "Disable-ComputerRestore -Drive $env:SystemDrive\ -ErrorAction SilentlyContinue"' }
+    foreach ($c in $commands) { $lines += Step $c $c }
     foreach ($f in $cfg.folders) { $lines += "mkdir `"$f`" 2>nul" }
+    # Охоронець: після оновлень Windows повертає вибір. Не встановився – позначки «готово» немає, і запасний шлях спробує знову.
+    if ($cfg.kvatyrka) {
+        $lines += 'start "" /wait "%ProgramFiles%\Kvatyrka\Kvatyrka.exe" --elevated guardian:on'
+        $lines += 'if errorlevel 1 (>> "%LOG%" echo [помилка %ERRORLEVEL%] охоронець & exit /b 1)'
+    }
+    $lines += '>> "%LOG%" echo %DATE% %TIME% готово'
     $lines += 'echo done> "%WINDIR%\Setup\Scripts\kvatyrka.done"'
     $lines += 'rd /s /q "%PKG%" 2>nul'
     $text = ($lines -join "`r`n") + "`r`n"
     [IO.File]::WriteAllText((Join-Path $dir 'kvatyrka-firstrun.cmd'), $text, (New-Object Text.UTF8Encoding $false))
     [IO.File]::WriteAllText((Join-Path $dir 'SetupComplete.cmd'), "@call `"%WINDIR%\Setup\Scripts\kvatyrka-firstrun.cmd`"`r`n", [Text.Encoding]::ASCII)
-    # Якщо Windows пропустить SetupComplete (буває з OEM-ключем), скрипт запуститься при першому вході адміністратора.
-    Set-Reg 'KV_SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' 'KvatyrkaFirstRun' '"%WINDIR%\Setup\Scripts\kvatyrka-firstrun.cmd"' 'ExpandString'
+    # Якщо Windows пропустить SetupComplete (буває з OEM-ключем), при першому вході скрипт попросить права адміністратора й виконається.
+    $fallback = 'cmd.exe /c if not exist "%WINDIR%\Setup\Scripts\kvatyrka.done" powershell.exe -NoProfile -WindowStyle Hidden -Command "Start-Process -Verb RunAs -FilePath $env:WINDIR\Setup\Scripts\kvatyrka-firstrun.cmd"'
+    Set-Reg 'KV_SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' 'KvatyrkaFirstRun' $fallback 'ExpandString'
 }
 
 # ---------- ISO ----------
@@ -305,7 +279,7 @@ $mount = Join-Path $Out 'mount'
 $downloads = Join-Path $Out 'downloads'
 $edition = $Editions[$cfg.edition]
 if (-not $edition) { Fail "Невідома редакція «$($cfg.edition)». Можна: $($Editions.Keys -join ', ')" }
-if ($cfg.kvatyrka -and -not (Test-Path $Shell)) { Fail "Немає оболонки Кватирки: $Shell. Покладіть туди Kvatyrka.exe з релізу або вкажіть -Shell." }
+if (-not (Test-Path $Shell)) { Fail "Немає Kvatyrka.exe: $Shell. Покладіть туди Kvatyrka.exe з релізу або вкажіть -Shell – він застосовує покращення." }
 $driverDir = if ($cfg.drivers) { Join-Path $PSScriptRoot $cfg.drivers } else { $null }
 
 Write-Host "Кватирка: $($cfg.name)" -ForegroundColor White
@@ -313,6 +287,7 @@ Write-Note "Профіль: $($cfg.Path)"
 Write-Note "Образ: $Iso"
 Write-Note "Редакція: Windows 11 $($cfg.edition)"
 Write-Note "Залишаються програми: $($cfg.keepApps -join ', ')"
+Write-Note "Покращення: $(if ($cfg.tweaks.recommended) { 'рекомендовані' } else { 'лише вибрані' })$(if (@($cfg.tweaks.on).Count) { ' + ' + ($cfg.tweaks.on -join ', ') })$(if (@($cfg.tweaks.off).Count) { ' – без ' + ($cfg.tweaks.off -join ', ') })"
 Write-Note "Компоненти: $(if ($cfg.packages) { ($cfg.packages | ForEach-Object name) -join ', ' } else { 'немає' })"
 if ($driverDir) { Write-Note "Драйвери: $driverDir $(if (Test-Path $driverDir) { '' } else { '(папки немає – пропущу)' })" }
 if ($Check) { Write-Host ''; Write-Host 'Перевірка пройдена, нічого не змінено.' -ForegroundColor Green; return }
@@ -360,13 +335,13 @@ try {
         Write-Note "– $($app.DisplayName)"
         Remove-AppxProvisionedPackage -Path $mount -PackageName $app.PackageName | Out-Null
     }
-    if ($cfg.privacy.noOneDrive) {
+    if ($cfg.image.removeOneDrive) {
         foreach ($f in 'Windows\System32\OneDriveSetup.exe', 'Windows\SysWOW64\OneDriveSetup.exe') {
             $p = Join-Path $mount $f
             if (Test-Path $p) { & takeown.exe /f $p | Out-Null; & icacls.exe $p /grant '*S-1-5-32-544:F' | Out-Null; Remove-Item $p -Force; Write-Note '– OneDrive' }
         }
     }
-    if (-not $cfg.system.recoveryEnvironment) {
+    if (-not $cfg.image.recoveryEnvironment) {
         $re = Join-Path $mount 'Windows\System32\Recovery\Winre.wim'
         if (Test-Path $re) { Remove-Item $re -Force; Write-Note '– середовище відновлення' }
     }
@@ -380,7 +355,8 @@ try {
     Write-Step 'Налаштовую систему'
     $hivesLoaded = $true
     Mount-Hives $mount
-    Set-Policies $cfg
+    Set-ImageOnly $cfg
+    $commands = Invoke-Tweaks $cfg $Shell (Join-Path $Out 'tweaks')
 
     if ($cfg.wallpaper) {
         # Шпалери за замовчуванням: замінюємо файли світлої й темної тем Windows і типовий екран блокування.
@@ -399,24 +375,25 @@ try {
         $dest = Join-Path $mount 'Program Files\Kvatyrka'
         New-Item -ItemType Directory -Force -Path $dest | Out-Null
         Copy-Item $Shell (Join-Path $dest 'Kvatyrka.exe') -Force
-        Set-Reg 'KV_USER\Software\Microsoft\Windows\CurrentVersion\Run' 'Kvatyrka' '"C:\Program Files\Kvatyrka\Kvatyrka.exe"' 'String'
-        Write-Note 'Оболонка Кватирки запускатиметься з Windows'
+        Set-Reg 'KV_USER\Software\Microsoft\Windows\CurrentVersion\Run' 'Kvatyrka' '"C:\Program Files\Kvatyrka\Kvatyrka.exe" --startup' 'String'
+        Write-Note 'Кватирка з охоронцем запускатиметься з Windows'
     }
+    else { Write-Note 'Без Kvatyrka.exe в образі: частина покращень Провідника не застосується, охоронця не буде' }
 
-    if ($cfg.packages -or $cfg.folders -or -not $cfg.system.hibernation -or -not $cfg.system.systemRestore) {
-        Write-Step 'Готую компоненти для першого запуску'
-        $packages = @(Get-Packages $cfg $downloads)
-        $pkgDir = Join-Path $mount 'Windows\Setup\Scripts\packages'
-        New-Item -ItemType Directory -Force -Path $pkgDir | Out-Null
-        foreach ($p in $packages) { Copy-Item (Join-Path $downloads $p.File) $pkgDir -Force; Write-Note "+ $($p.Name)" }
-        Write-FirstRun $cfg $packages $mount
-    }
+    Write-Step 'Готую перший запуск'
+    $packages = @(Get-Packages $cfg $downloads)
+    $pkgDir = Join-Path $mount 'Windows\Setup\Scripts\packages'
+    New-Item -ItemType Directory -Force -Path $pkgDir | Out-Null
+    foreach ($p in $packages) { Copy-Item (Join-Path $downloads $p.File) $pkgDir -Force; Write-Note "+ $($p.Name)" }
+    Write-FirstRun $cfg $packages $commands $mount
 
     Dismount-Hives
     $hivesLoaded = $false
 
     Write-Step 'Стискаю компоненти (кілька хвилин)'
     & dism.exe /Image:$mount /Cleanup-Image /StartComponentCleanup /ResetBase | Out-Null
+    # Невдале стискання не псує образ – лише лишає його більшим.
+    if ($LASTEXITCODE -ne 0) { Write-Warning "DISM не стиснув компоненти (код $LASTEXITCODE), образ буде більшим" }
 
     Write-Step 'Зберігаю образ'
     Dismount-WindowsImage -Path $mount -Save | Out-Null

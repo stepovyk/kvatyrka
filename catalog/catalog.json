@@ -1,0 +1,550 @@
+{
+  "version": 1,
+  "categories": [
+    { "id": "start", "name": "Пуск і панель задач", "icon": "Taskbar" },
+    { "id": "explorer", "name": "Провідник", "icon": "Folder" },
+    { "id": "ads", "name": "Реклама й підказки", "icon": "Block" },
+    { "id": "privacy", "name": "Приватність", "icon": "Shield" },
+    { "id": "edge", "name": "Edge", "icon": "Globe" },
+    { "id": "games", "name": "Ігри й миша", "icon": "Gamepad" },
+    { "id": "system", "name": "Система", "icon": "Display" }
+  ],
+  "tweaks": [
+    {
+      "id": "start.noAds",
+      "category": "start",
+      "name": "Пуск без реклами й порад",
+      "description": "У «Рекомендованому» лишаються ваші файли: без реклами програм, порад і нагадувань про акаунт Microsoft.",
+      "default": true,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "name": "Start_IrisRecommendations", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "name": "Start_AccountNotifications", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "start.localSearch",
+      "category": "start",
+      "name": "Пошук лише на комп'ютері",
+      "description": "Пуск шукає програми, файли й параметри без Bing, новин і «Основних моментів» – швидше й без реклами.",
+      "default": true,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKCU\\Software\\Policies\\Microsoft\\Windows\\Explorer", "name": "DisableSearchBoxSuggestions", "type": "dword", "value": 1 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search", "name": "BingSearchEnabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\SearchSettings", "name": "IsDynamicSearchBoxEnabled", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "start.noRecentFiles",
+      "category": "start",
+      "name": "Без нещодавніх файлів",
+      "description": "Пуск, Провідник і меню програм на панелі не показують, що ви відкривали останнім.",
+      "default": false,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "name": "Start_TrackDocs", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "taskbar.search",
+      "category": "start",
+      "name": "Пошук на панелі задач",
+      "description": "Пошук завжди відкривається клавішею Win і набором тексту, тож на панелі достатньо значка.",
+      "default": "icon",
+      "effect": "explorer",
+      "choice": {
+        "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Search",
+        "name": "SearchboxTaskbarMode",
+        "type": "dword",
+        "windows": "box",
+        "options": [
+          { "id": "hidden", "name": "Сховати", "value": 0 },
+          { "id": "icon", "name": "Значок", "value": 1 },
+          { "id": "box", "name": "Поле", "value": 2 }
+        ]
+      }
+    },
+    {
+      "id": "taskbar.align",
+      "category": "start",
+      "name": "Значки на панелі задач",
+      "description": "По центру, як задумано в Windows 11, або ліворуч, як звикли з попередніх версій.",
+      "default": "center",
+      "effect": "explorer",
+      "choice": {
+        "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "name": "TaskbarAl",
+        "type": "dword",
+        "windows": "center",
+        "options": [
+          { "id": "left", "name": "Ліворуч", "value": 0 },
+          { "id": "center", "name": "По центру", "value": 1 }
+        ]
+      }
+    },
+    {
+      "id": "taskbar.noWidgets",
+      "category": "start",
+      "name": "Без віджетів і новин",
+      "description": "З панелі зникає кнопка віджетів з новинами, погодою й рекламою, а сама дошка віджетів вимикається.",
+      "default": true,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Dsh", "name": "AllowNewsAndInterests", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "taskbar.noTaskView",
+      "category": "start",
+      "name": "Без кнопки «Подання завдань»",
+      "description": "Усі вікна й робочі столи так само відкриваються клавішами Win+Tab.",
+      "default": true,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "name": "ShowTaskViewButton", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "taskbar.noCopilot",
+      "category": "start",
+      "name": "Без Copilot у Windows",
+      "description": "Вимикає вбудований Copilot і його кнопку. Окрему програму Copilot можна прибрати в розділі «Програми».",
+      "default": true,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot", "name": "TurnOffWindowsCopilot", "type": "dword", "value": 1 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "name": "ShowCopilotButton", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "taskbar.endTask",
+      "category": "start",
+      "name": "«Завершити завдання» на панелі",
+      "description": "Права кнопка на програмі на панелі задач закриває навіть завислу програму, без Диспетчера завдань.",
+      "default": true,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\TaskbarDeveloperSettings", "name": "TaskbarEndTask", "type": "dword", "value": 1 }
+      ]
+    },
+    {
+      "id": "taskbar.seconds",
+      "category": "start",
+      "name": "Секунди на годиннику",
+      "description": "Годинник на панелі задач показує й секунди.",
+      "default": false,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "name": "ShowSecondsInSystemClock", "type": "dword", "value": 1 }
+      ]
+    },
+    {
+      "id": "explorer.thisPc",
+      "category": "explorer",
+      "name": "Відкривати «Цей ПК»",
+      "description": "Провідник відкривається одразу на дисках і папках, а не на «Головній».",
+      "default": true,
+      "effect": "now",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "name": "LaunchTo", "type": "dword", "value": 1 }
+      ]
+    },
+    {
+      "id": "explorer.extensions",
+      "category": "explorer",
+      "name": "Показувати розширення файлів",
+      "description": "Видно, що «фото.jpg.exe» – програма, а не фото. Захищає від найпоширенішого обману.",
+      "default": true,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "name": "HideFileExt", "type": "dword", "value": 0, "off": 1 }
+      ]
+    },
+    {
+      "id": "explorer.noGallery",
+      "category": "explorer",
+      "name": "Без «Галереї»",
+      "description": "Прибирає з бічної панелі «Галерею», що повторює папку «Зображення».",
+      "default": true,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKCU\\Software\\Classes\\CLSID\\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}", "name": "System.IsPinnedToNameSpaceTree", "type": "dword", "value": 0, "revertKey": "HKCU\\Software\\Classes\\CLSID\\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}" }
+      ]
+    },
+    {
+      "id": "explorer.classicMenu",
+      "category": "explorer",
+      "name": "Повне меню правої кнопки",
+      "description": "Одразу всі пункти, як у Windows 10, без «Показати більше параметрів».",
+      "default": false,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32", "name": "", "type": "string", "value": "", "revertKey": "HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" }
+      ]
+    },
+    {
+      "id": "ads.settings",
+      "category": "ads",
+      "name": "Параметри без реклами",
+      "description": "Параметри Windows не пропонують послуги, підписки й «рекомендований вміст».",
+      "default": true,
+      "effect": "now",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SubscribedContent-338393Enabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SubscribedContent-353694Enabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SubscribedContent-353696Enabled", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "ads.tips",
+      "category": "ads",
+      "name": "Без порад і «Завершіть налаштування»",
+      "description": "Після оновлень немає екрана вітання, сповіщень з порадами й нагадувань перейти на акаунт Microsoft чи Microsoft 365.",
+      "default": true,
+      "effect": "now",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SubscribedContent-338389Enabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SubscribedContent-310093Enabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SoftLandingEnabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\UserProfileEngagement", "name": "ScoobeSystemSettingEnabled", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "ads.noSilentApps",
+      "category": "ads",
+      "name": "Без самовільних програм",
+      "description": "Windows не встановлює сама ігри й «рекомендовані» програми та не пропонує їх у Пуску.",
+      "default": true,
+      "effect": "now",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SilentInstalledAppsEnabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "OemPreInstalledAppsEnabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "PreInstalledAppsEnabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "PreInstalledAppsEverEnabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SystemPaneSuggestionsEnabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SubscribedContent-338388Enabled", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "ads.lockScreen",
+      "category": "ads",
+      "name": "Екран блокування без реклами",
+      "description": "Без «цікавих фактів», порад і реклами поверх картинки.",
+      "default": true,
+      "effect": "now",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "RotatingLockScreenOverlayEnabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SubscribedContent-338387Enabled", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "ads.lockPicture",
+      "category": "ads",
+      "name": "Своя картинка на екрані блокування",
+      "description": "Замість щоденних фото Windows Spotlight з посиланнями – одна картинка, яку можна змінити в Параметрах.",
+      "default": false,
+      "effect": "now",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "RotatingLockScreenEnabled", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "ads.explorer",
+      "category": "ads",
+      "name": "Провідник без реклами OneDrive",
+      "description": "Провідник не пропонує OneDrive і Microsoft 365 поверх ваших папок.",
+      "default": true,
+      "effect": "explorer",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "name": "ShowSyncProviderNotifications", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "ads.feedback",
+      "category": "ads",
+      "name": "Без запитів відгуків",
+      "description": "Windows не перериває роботу питаннями «Як вам Windows?».",
+      "default": true,
+      "effect": "now",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Siuf\\Rules", "name": "NumberOfSIUFInPeriod", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection", "name": "DoNotShowFeedbackNotifications", "type": "dword", "value": 1 }
+      ]
+    },
+    {
+      "id": "privacy.telemetry",
+      "category": "privacy",
+      "name": "Мінімум діагностики",
+      "description": "Microsoft отримує лише обов'язкові дані для оновлень і безпеки – найменше, що дозволяє Windows.",
+      "default": true,
+      "effect": "restart",
+      "conflicts": "insider",
+      "set": [
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection", "name": "AllowTelemetry", "type": "dword", "value": 1 }
+      ]
+    },
+    {
+      "id": "privacy.ads",
+      "category": "privacy",
+      "name": "Без реклами за вашими даними",
+      "description": "Вимикає рекламний ідентифікатор, поради на основі діагностики й доступ сайтів до списку ваших мов.",
+      "default": true,
+      "effect": "signin",
+      "set": [
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\AdvertisingInfo", "name": "DisabledByGroupPolicy", "type": "dword", "value": 1 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo", "name": "Enabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Privacy", "name": "TailoredExperiencesWithDiagnosticDataEnabled", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Policies\\Microsoft\\Windows\\CloudContent", "name": "DisableTailoredExperiencesWithDiagnosticData", "type": "dword", "value": 1 },
+        { "key": "HKCU\\Control Panel\\International\\User Profile", "name": "HttpAcceptLanguageOptOut", "type": "dword", "value": 1 }
+      ]
+    },
+    {
+      "id": "privacy.activity",
+      "category": "privacy",
+      "name": "Без історії дій",
+      "description": "Windows не збирає й не надсилає, які програми й файли ви відкривали.",
+      "default": true,
+      "effect": "signin",
+      "set": [
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System", "name": "EnableActivityFeed", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System", "name": "PublishUserActivities", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System", "name": "UploadUserActivities", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "privacy.typing",
+      "category": "privacy",
+      "name": "Без збору набраного тексту",
+      "description": "Клавіатура й рукописне введення не надсилають ваші слова Microsoft. Підказки й автовиправлення працюють.",
+      "default": true,
+      "effect": "signin",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\InputPersonalization", "name": "RestrictImplicitInkCollection", "type": "dword", "value": 1 },
+        { "key": "HKCU\\Software\\Microsoft\\InputPersonalization", "name": "RestrictImplicitTextCollection", "type": "dword", "value": 1 },
+        { "key": "HKCU\\Software\\Microsoft\\InputPersonalization\\TrainedDataStore", "name": "HarvestContacts", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Personalization\\Settings", "name": "AcceptedPrivacyPolicy", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Microsoft\\Input\\TIPC", "name": "Enabled", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "privacy.recall",
+      "category": "privacy",
+      "name": "Без Recall",
+      "description": "Windows не робить знімків екрана для пошуку по історії. Recall є лише на ПК Copilot+.",
+      "default": true,
+      "effect": "restart",
+      "set": [
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI", "name": "DisableAIDataAnalysis", "type": "dword", "value": 1 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI", "name": "AllowRecallEnablement", "type": "dword", "value": 0 },
+        { "key": "HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsAI", "name": "DisableAIDataAnalysis", "type": "dword", "value": 1 }
+      ]
+    },
+    {
+      "id": "edge.clean",
+      "category": "edge",
+      "name": "Edge без реклами й підказок",
+      "description": "Без вітального майстра, знижок, Rewards, новин MSN і нагадувань зробити Edge основним. Edge писатиме «Керується організацією» – це через ці правила.",
+      "default": true,
+      "effect": "now",
+      "set": [
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "HideFirstRunExperience", "type": "dword", "value": 1 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "ShowRecommendationsEnabled", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "PromotionalTabsEnabled", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "EdgeShoppingAssistantEnabled", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "ShowMicrosoftRewards", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "SpotlightExperiencesAndRecommendationsEnabled", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "PersonalizationReportingEnabled", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "NewTabPageContentEnabled", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "NewTabPageHideDefaultTopSites", "type": "dword", "value": 1 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "DefaultBrowserSettingEnabled", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "edge.noBackground",
+      "category": "edge",
+      "name": "Edge не працює у фоні",
+      "description": "Edge не запускається разом із Windows і закривається повністю – менше пам'яті й процесів.",
+      "default": true,
+      "effect": "now",
+      "set": [
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "StartupBoostEnabled", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "BackgroundModeEnabled", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "edge.noSidebar",
+      "category": "edge",
+      "name": "Edge без бічної панелі",
+      "description": "Прибирає бічну панель із Copilot та іграми.",
+      "default": true,
+      "effect": "now",
+      "set": [
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge", "name": "HubsSidebarEnabled", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "games.rawMouse",
+      "category": "games",
+      "name": "Миша без прискорення",
+      "description": "Курсор зміщується рівно стільки, скільки рука, – точне прицілювання. Швидкість курсора не змінюється.",
+      "default": false,
+      "effect": "now",
+      "refresh": "mouse",
+      "set": [
+        { "key": "HKCU\\Control Panel\\Mouse", "name": "MouseSpeed", "type": "string", "value": "0", "off": "1" },
+        { "key": "HKCU\\Control Panel\\Mouse", "name": "MouseThreshold1", "type": "string", "value": "0", "off": "6" },
+        { "key": "HKCU\\Control Panel\\Mouse", "name": "MouseThreshold2", "type": "string", "value": "0", "off": "10" }
+      ]
+    },
+    {
+      "id": "games.noCapture",
+      "category": "games",
+      "name": "Без фонового запису ігор",
+      "description": "Game Bar не записує гру у фоні – трохи більше кадрів. Знімки екрана Win+Shift+S працюють.",
+      "default": false,
+      "effect": "signin",
+      "set": [
+        { "key": "HKCU\\System\\GameConfigStore", "name": "GameDVR_Enabled", "type": "dword", "value": 0, "off": 1 },
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR", "name": "AppCaptureEnabled", "type": "dword", "value": 0 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR", "name": "AllowGameDVR", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "games.noStickyKeys",
+      "category": "games",
+      "name": "Без вікна залипання клавіш",
+      "description": "П'ять натискань Shift у грі більше не відкривають вікно. Самі спеціальні можливості лишаються в Параметрах.",
+      "default": false,
+      "effect": "signin",
+      "set": [
+        { "key": "HKCU\\Control Panel\\Accessibility\\StickyKeys", "name": "Flags", "type": "string", "value": "506", "off": "510" },
+        { "key": "HKCU\\Control Panel\\Accessibility\\ToggleKeys", "name": "Flags", "type": "string", "value": "58", "off": "62" },
+        { "key": "HKCU\\Control Panel\\Accessibility\\Keyboard Response", "name": "Flags", "type": "string", "value": "122", "off": "126" }
+      ]
+    },
+    {
+      "id": "system.restartNotice",
+      "category": "system",
+      "name": "Попереджати про перезавантаження",
+      "description": "Windows заздалегідь повідомить, що для оновлення потрібне перезавантаження, а не перезапуститься несподівано.",
+      "default": true,
+      "effect": "now",
+      "set": [
+        { "key": "HKLM\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings", "name": "RestartNotificationsAllowed2", "type": "dword", "value": 1 }
+      ]
+    },
+    {
+      "id": "system.noStartupDelay",
+      "category": "system",
+      "name": "Автозапуск без затримки",
+      "description": "Програми з автозапуску стартують одразу після входу, а не через кілька секунд.",
+      "default": true,
+      "effect": "signin",
+      "set": [
+        { "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Serialize", "name": "StartupDelayInMSec", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "system.noAutoEncryption",
+      "category": "system",
+      "name": "Без самовільного шифрування диска",
+      "description": "Windows не вмикає BitLocker сама. З локальним акаунтом ключ відновлення легко втратити разом з усіма даними. Увімкнути шифрування можна будь-коли вручну.",
+      "default": true,
+      "effect": "now",
+      "set": [
+        { "key": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\BitLocker", "name": "PreventDeviceEncryption", "type": "dword", "value": 1 }
+      ]
+    },
+    {
+      "id": "system.memoryIntegrity",
+      "category": "system",
+      "name": "Ізоляція ядра",
+      "description": "Захищає ядро від шкідливих і вразливих драйверів. Vanguard і сучасні ігри з нею працюють. Якщо драйвер несумісний, Windows покаже його в «Безпеці Windows».",
+      "default": false,
+      "effect": "restart",
+      "set": [
+        { "key": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\DeviceGuard\\Scenarios\\HypervisorEnforcedCodeIntegrity", "name": "Enabled", "type": "dword", "value": 1, "off": 0 }
+      ]
+    },
+    {
+      "id": "system.noFastStartup",
+      "category": "system",
+      "name": "Без швидкого запуску",
+      "description": "«Завершення роботи» справді вимикає ПК: драйвери й оновлення застосовуються начисто.",
+      "default": false,
+      "effect": "now",
+      "set": [
+        { "key": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power", "name": "HiberbootEnabled", "type": "dword", "value": 0, "off": 1 }
+      ]
+    },
+    {
+      "id": "system.noHibernation",
+      "category": "system",
+      "name": "Без гібернації",
+      "description": "Звільняє на диску гігабайти під hiberfil.sys. Для ноутбуків краще лишити гібернацію.",
+      "default": false,
+      "effect": "now",
+      "set": [
+        { "key": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Power", "name": "HibernateEnabled", "type": "dword", "value": 0, "off": 1 }
+      ],
+      "run": { "on": "powercfg.exe /hibernate off", "off": "powercfg.exe /hibernate on" }
+    },
+    {
+      "id": "system.noDriverUpdates",
+      "category": "system",
+      "name": "Драйвери не з Windows Update",
+      "description": "Windows не підмінює драйвери відеокарти й іншого заліза своїми. Ставте драйвери з сайту виробника.",
+      "default": false,
+      "effect": "now",
+      "set": [
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "name": "ExcludeWUDriversInQualityUpdate", "type": "dword", "value": 1 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DriverSearching", "name": "SearchOrderConfig", "type": "dword", "value": 0 }
+      ]
+    },
+    {
+      "id": "system.noRestorePoints",
+      "category": "system",
+      "name": "Без точок відновлення",
+      "description": "Windows не робить точок відновлення й не займає під них диск. Повернутися до попереднього стану ними вже не вийде.",
+      "default": false,
+      "effect": "now",
+      "set": [
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\SystemRestore", "name": "DisableSR", "type": "dword", "value": 1 },
+        { "key": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\SystemRestore", "name": "DisableConfig", "type": "dword", "value": 1 }
+      ]
+    }
+  ],
+  "apps": [
+    { "id": "copilot", "name": "Copilot", "packages": ["Microsoft.Copilot", "Microsoft.Windows.Ai.Copilot.Provider"], "default": true },
+    { "id": "office", "name": "Microsoft 365 Copilot", "packages": ["Microsoft.MicrosoftOfficeHub"], "default": true },
+    { "id": "news", "name": "Новини", "packages": ["Microsoft.BingNews"], "default": true },
+    { "id": "bing", "name": "Пошук Bing", "packages": ["Microsoft.BingSearch"], "default": true },
+    { "id": "widgets", "name": "Віджети", "packages": ["MicrosoftWindows.Client.WebExperience"], "default": true },
+    { "id": "clipchamp", "name": "Clipchamp", "packages": ["Clipchamp.Clipchamp"], "default": true },
+    { "id": "solitaire", "name": "Solitaire Collection", "packages": ["Microsoft.MicrosoftSolitaireCollection"], "default": true },
+    { "id": "tips", "name": "Поради", "packages": ["Microsoft.Getstarted"], "default": true },
+    { "id": "help", "name": "Отримати довідку", "packages": ["Microsoft.GetHelp"], "default": true },
+    { "id": "feedback", "name": "Центр відгуків", "packages": ["Microsoft.WindowsFeedbackHub"], "default": true },
+    { "id": "automate", "name": "Power Automate", "packages": ["Microsoft.PowerAutomateDesktop"], "default": true },
+    { "id": "family", "name": "Microsoft Family", "packages": ["MicrosoftCorporationII.MicrosoftFamily"], "default": true },
+    { "id": "devhome", "name": "Dev Home", "packages": ["Microsoft.Windows.DevHome"], "default": true },
+    { "id": "teams", "name": "Microsoft Teams", "packages": ["MSTeams", "MicrosoftTeams"], "default": true },
+    { "id": "todo", "name": "Microsoft To Do", "packages": ["Microsoft.Todos"], "default": true },
+    { "id": "linkedin", "name": "LinkedIn", "packages": ["7EE7776C.LinkedInforWindows"], "default": true },
+    { "id": "maps", "name": "Карти", "packages": ["Microsoft.WindowsMaps"], "default": true },
+    { "id": "people", "name": "Люди", "packages": ["Microsoft.People"], "default": true },
+    { "id": "cortana", "name": "Cortana", "packages": ["Microsoft.549981C3F5F10"], "default": true },
+    { "id": "mixedreality", "name": "Портал змішаної реальності", "packages": ["Microsoft.MixedReality.Portal"], "default": true },
+    { "id": "movies", "name": "Кіно й ТБ", "packages": ["Microsoft.ZuneVideo"], "default": true },
+    { "id": "promoted", "name": "Рекламні ігри й програми", "packages": ["king.com.*", "SpotifyAB.SpotifyMusic", "Disney.*", "*.Netflix", "Facebook.*", "*.Instagram", "BytedancePte.Ltd.TikTok", "AmazonVideo.PrimeVideo", "*.Twitter"], "default": true },
+    { "id": "outlook", "name": "Outlook (новий)", "packages": ["Microsoft.OutlookForWindows"], "default": false },
+    { "id": "weather", "name": "Погода", "packages": ["Microsoft.BingWeather"], "default": false },
+    { "id": "phone", "name": "Зв'язок із телефоном", "packages": ["Microsoft.YourPhone"], "default": false },
+    { "id": "quickassist", "name": "Швидка допомога", "packages": ["MicrosoftCorporationII.QuickAssist"], "default": false },
+    { "id": "xbox", "name": "Xbox", "packages": ["Microsoft.GamingApp"], "default": false },
+    { "id": "gamebar", "name": "Game Bar", "packages": ["Microsoft.XboxGamingOverlay", "Microsoft.XboxSpeechToTextOverlay"], "default": false, "with": "games.noCapture" },
+    { "id": "recorder", "name": "Звукозапис", "packages": ["Microsoft.WindowsSoundRecorder"], "default": false },
+    { "id": "stickynotes", "name": "Записки", "packages": ["Microsoft.MicrosoftStickyNotes"], "default": false }
+  ]
+}

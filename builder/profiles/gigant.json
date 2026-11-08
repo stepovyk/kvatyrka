@@ -20,25 +20,55 @@
     "Microsoft.WindowsAppRuntime.*",
     "Microsoft.MicrosoftEdge.*"
   ],
-  "privacy": {
-    "minimalTelemetry": true,
-    "noAds": true,
-    "noCopilot": true,
-    "noWidgets": true,
-    "noBingInSearch": true,
-    "noOneDrive": true,
-    "noTeamsAndOutlookAutoInstall": true
-  },
-  "system": {
-    "localAccountAllowed": true,
-    "hibernation": false,
-    "fastStartup": false,
-    "driversFromWindowsUpdate": false,
-    "memoryIntegrity": true,
-    "gameMode": true,
-    "systemRestore": false,
+  "image": {
+    "localAccount": true,
+    "removeOneDrive": true,
+    "blockOutlookAndDevHome": true,
     "recoveryEnvironment": false
   },
+  "tweaks": {
+    "recommended": true,
+    "on": [
+      "system.memoryIntegrity",
+      "system.noFastStartup",
+      "system.noHibernation",
+      "system.noDriverUpdates",
+      "system.noRestorePoints",
+      "games.noCapture",
+      "games.noStickyKeys",
+      "ads.lockPicture"
+    ],
+    "off": [],
+    "choices": {
+      "taskbar.search": "hidden"
+    }
+  },
+  "registry": [
+    {
+      "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+      "name": "AppsUseLightTheme",
+      "type": "dword",
+      "value": 0
+    },
+    {
+      "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+      "name": "SystemUsesLightTheme",
+      "type": "dword",
+      "value": 0
+    },
+    {
+      "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+      "name": "EnableTransparency",
+      "type": "dword",
+      "value": 0
+    },
+    {
+      "key": "HKCU\\Control Panel\\Mouse",
+      "name": "MouseSensitivity",
+      "type": "string",
+      "value": "13"
+    }
+  ],
   "folders": [
     "C:\\DEO\\Downloads",
     "C:\\DEO\\Programs",

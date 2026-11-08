@@ -92,7 +92,7 @@ public abstract class PopupWindow : ShellWindow
     // Alt+F4 лише ховає панель: закрите вікно WPF не можна показати знову.
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        if (!App.Current.ShuttingDown)
+        if (!App.Current.ShuttingDown && !Closable)
         {
             e.Cancel = true;
             HidePopup();
@@ -100,6 +100,9 @@ public abstract class PopupWindow : ShellWindow
         base.OnClosing(e);
     }
     public event Action? OpenChanged;
+
+    // Острів вимикають: панелі закриваються по-справжньому, а не ховаються.
+    internal bool Closable { get; set; }
 
     public void Toggle()
     {

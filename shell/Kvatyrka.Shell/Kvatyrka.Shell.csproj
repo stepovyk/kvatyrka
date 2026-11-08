@@ -20,11 +20,15 @@
     <Product>Кватирка</Product>
     <Company>Stepovyk</Company>
     <Copyright>© Stepovyk</Copyright>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <NeutralLanguage>uk-UA</NeutralLanguage>
     <SatelliteResourceLanguages>uk</SatelliteResourceLanguages>
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\Kvatyrka.Core\Kvatyrka.Core.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Assets\Fonts\*.ttf" />

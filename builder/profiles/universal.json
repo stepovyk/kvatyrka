@@ -16,6 +16,7 @@
     "Microsoft.ZuneMusic",
     "Microsoft.XboxIdentityProvider",
     "Microsoft.Xbox.TCUI",
+    "Microsoft.XboxGamingOverlay",
     "Microsoft.HEIFImageExtension",
     "Microsoft.HEVCVideoExtension",
     "Microsoft.WebMediaExtensions",
@@ -31,25 +32,21 @@
     "Microsoft.ApplicationCompatibilityEnhancements",
     "Microsoft.MicrosoftEdge.*"
   ],
-  "privacy": {
-    "minimalTelemetry": true,
-    "noAds": true,
-    "noCopilot": true,
-    "noWidgets": true,
-    "noBingInSearch": true,
-    "noOneDrive": true,
-    "noTeamsAndOutlookAutoInstall": true
-  },
-  "system": {
-    "localAccountAllowed": true,
-    "hibernation": true,
-    "fastStartup": true,
-    "driversFromWindowsUpdate": true,
-    "memoryIntegrity": true,
-    "gameMode": true,
-    "systemRestore": true,
+  "image": {
+    "localAccount": true,
+    "removeOneDrive": true,
+    "blockOutlookAndDevHome": true,
     "recoveryEnvironment": true
   },
+  "tweaks": {
+    "recommended": true,
+    "on": [
+      "ads.lockPicture"
+    ],
+    "off": [],
+    "choices": {}
+  },
+  "registry": [],
   "folders": [],
   "drivers": "",
   "wallpaper": "assets\\wheat-field-sunset.jpg",

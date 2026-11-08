@@ -95,6 +95,14 @@ public sealed class IslandWindow : ShellWindow
 
     public void ToggleMenu() => _menu.Toggle();
 
+    // Острів вимкнули в налаштуваннях: зупиняємо оновлення й закриваємо всі його вікна.
+    public void Retire()
+    {
+        _timer.Stop();
+        foreach (var p in new PopupWindow[] { _menu, _quick, _clock }) { p.Closable = true; p.Close(); }
+        Close();
+    }
+
     private ShellButton Cell(UIElement content, string name, Action click, double width = 48)
     {
         var b = new ShellButton { Content = content, Width = width, ToolTip = name };

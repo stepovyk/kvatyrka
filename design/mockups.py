@@ -56,6 +56,10 @@ P = {
     'refresh': '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"></path><path d="M19.5 4.5v4h-4"></path>',
     'arrow': '<path d="M5 12h14M13 6l6 6-6 6"></path>',
     'contrast': '<circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none"></path>',
+    'taskbar': '<rect x="3" y="4.5" width="18" height="15" rx="2.5"></rect><path d="M3 15h18M10 17.25h4"></path>',
+    'block': '<circle cx="12" cy="12" r="8.5"></circle><path d="M6 6l12 12"></path>',
+    'trash': '<path d="M4.5 7h15M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7"></path><path d="M6.5 7l.8 11.6A1.5 1.5 0 0 0 8.8 20h6.4a1.5 1.5 0 0 0 1.5-1.4L17.5 7"></path><path d="M10 11v5M14 11v5"></path>',
+    'island': '<rect x="3" y="4" width="18" height="16" rx="2.5"></rect><rect x="7.5" y="14.5" width="9" height="3" rx="1.5"></rect>',
 }
 
 
@@ -232,46 +236,103 @@ def clock_panel(t):
 
 
 # ---------- Вікно налаштувань Кватирки ----------
-SET_NAV = [('Персоналізація', 'palette'), ('Острів', 'apps'), ('Система', 'display')]
+CATALOG = json.load(open(os.path.join(ROOT, '..', 'catalog', 'catalog.json'), encoding='utf-8'))
+ICON_OF = {'Taskbar': 'taskbar', 'Folder': 'folder', 'Block': 'block', 'Shield': 'shield', 'Globe': 'globe', 'Gamepad': 'gamepad', 'Display': 'display'}
+WIN_NAV = ([('home', 'Головне', 'home')] + [(c['id'], c['name'], ICON_OF[c['icon']]) for c in CATALOG['categories']]
+           + [('apps', 'Програми', 'trash'), ('island', 'Острів', 'island')])
+RECOMMENDED = [x for x in CATALOG['tweaks'] if (x['default'] is True) or (isinstance(x['default'], str) and x['default'] != x['choice']['windows'])]
 
 
-def settings_window(t):
-    def row(label, control, hint=None, last=False):
-        line = '' if last else f' border-bottom: 1px solid {t["line"]};'
-        h = f'<span style="font-size: 12px; color: {t["sec"]}; line-height: 1;">{hint}</span>' if hint else ''
-        return (f'      <div style="min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 6px; box-sizing: border-box;{line}">'
-                f'<span style="display: flex; flex-direction: column; gap: 6px;"><span style="line-height: 1;">{label}</span>{h}</span>{control}</div>')
-    seg_items = [('Світла', t is LIGHT), ('Темна', t is DARK), ('Автоматично', False)]
-    seg = (f'<div role="radiogroup" aria-label="Тема" style="height: 36px; display: flex; padding: 2px; box-sizing: border-box; background: {t["field"]}; border-radius: 10px;">'
-           + ''.join(f'<button role="radio" aria-checked="{"true" if on else "false"}" style="height: 32px; padding: 0 14px; border-radius: 8px; line-height: 1;{" background: " + t["active"] + "; font-weight: 600;" if on else " color: " + t["sec"] + ";"}">{n}</button>' for n, on in seg_items)
-           + '</div>')
-    swatches = ['#5B9BFF', '#3FB68B', '#E5A23B', '#E26D5A', '#B07CF0', '#8A93A0']
-    names = ['Блакитний', 'Зелений', 'Бурштиновий', 'Кораловий', 'Бузковий', 'Сірий']
-    sw = ('<div role="radiogroup" aria-label="Акцент" style="display: flex; gap: 8px;">'
-          + ''.join(f'<button role="radio" aria-checked="{"true" if i == 0 else "false"}" aria-label="{names[i]}" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;{" box-shadow: inset 0 0 0 2px " + c + ";" if i == 0 else ""}"><span style="width: 22px; height: 22px; border-radius: 50%; background: {c};"></span></button>' for i, c in enumerate(swatches))
-          + '</div>')
-    toggle = (f'<button role="switch" aria-checked="true" aria-label="Прозорість" style="width: 44px; height: 24px; border-radius: 12px; background: {ACCENT}; position: relative; flex-shrink: 0;">'
-              f'<span style="position: absolute; top: 2px; left: 22px; width: 20px; height: 20px; border-radius: 50%; background: #FFFFFF;"></span></button>')
-    content = '\n'.join([row('Тема', seg, '«Автоматично» – як у Windows'), row('Акцент', sw), row('Прозорість', toggle, 'Скло острова й панелей'),
-                         row('Шпалери', text_button(t, 'Змінити'), last=True)])
+def switch(t, on, label):
+    knob = 22 if on else 2
+    bg = ACCENT if on else t['track']
+    return (f'<button role="switch" aria-checked="{"true" if on else "false"}" aria-label="{label}" style="width: 44px; height: 24px; border-radius: 12px; background: {bg}; position: relative; flex-shrink: 0;">'
+            f'<span style="position: absolute; top: 2px; left: {knob}px; width: 20px; height: 20px; border-radius: 50%; background: #FFFFFF;"></span></button>')
+
+
+def segmented(t, label, items):
+    return (f'<div role="radiogroup" aria-label="{label}" style="height: 36px; display: flex; padding: 2px; box-sizing: border-box; background: {t["field"]}; border-radius: 10px; flex-shrink: 0;">'
+            + ''.join(f'<button role="radio" aria-checked="{"true" if on else "false"}" style="height: 32px; padding: 0 14px; border-radius: 8px; line-height: 1; white-space: nowrap;{" background: " + t["active"] + "; font-weight: 600;" if on else " color: " + t["sec"] + ";"}">{n}</button>' for n, on in items)
+            + '</div>')
+
+
+def accent_button(text):
+    return f'<button style="height: 36px; padding: 0 16px; border-radius: 10px; background: {ACCENT}; color: {ON_ACCENT}; line-height: 1; font-weight: 500; flex-shrink: 0;">{text}</button>'
+
+
+def win_row(t, label, control, hint=None, last=False):
+    line = '' if last else f' border-bottom: 1px solid {t["line"]};'
+    h = f'<span style="font-size: 12px; line-height: 18px; color: {t["sec"]}; margin-top: 4px;">{hint}</span>' if hint else ''
+    return (f'      <div style="min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 8px; box-sizing: border-box; flex-shrink: 0;{line}">'
+            f'<span style="display: flex; flex-direction: column; min-width: 0;"><span style="line-height: 20px;">{label}</span>{h}</span>{control}</div>')
+
+
+def win_hero(t, heading, text, actions=''):
+    acts = f'<div style="display: flex; gap: 8px; margin-top: 16px;">{actions}</div>' if actions else ''
+    return (f'      <div style="padding: 16px 8px 20px; border-bottom: 1px solid {t["line"]}; flex-shrink: 0;">'
+            f'<div style="font-size: 20px; line-height: 24px; font-weight: 600;">{heading}</div>'
+            f'<div style="font-size: 12px; line-height: 18px; color: {t["sec"]}; margin-top: 8px; max-width: 560px;">{text}</div>{acts}</div>')
+
+
+def win_section(t, section, applied):
+    rows = []
+    if section == 'home':
+        done = len(RECOMMENDED) if applied else 0
+        left = len(RECOMMENDED) - done
+        first = (accent_button(f'Увімкнути рекомендоване ({left})') if left else
+                 f'<button style="height: 36px; padding: 0 16px; border-radius: 10px; background: {t["field"]}; color: {t["dis"]}; line-height: 1; font-weight: 500;">Усе рекомендоване увімкнено</button>')
+        rows.append(win_hero(t, 'Windows без зайвого',
+                             f'Увімкнено {done} з {len(RECOMMENDED)} рекомендованих покращень. Кожне вимикається окремим перемикачем, і тоді Windows знову такий, як був.',
+                             first + text_button(t, 'Повернути як у Windows')))
+        rows.append(win_row(t, 'Охоронець налаштувань', switch(t, applied, 'Охоронець налаштувань'),
+                            'Після кожного оновлення Windows Кватирка повертає ваш вибір, якщо оновлення його скинуло. Що ви змінили самі в Параметрах, вона не чіпає. Для цього Кватирка встановлюється в Program Files.'))
+        rows.append(win_row(t, 'Тема Кватирки', segmented(t, 'Тема Кватирки', [('Світла', False), ('Темна', False), ('Як у Windows', True)])))
+        sw = ('<div role="radiogroup" aria-label="Акцент" style="display: flex; gap: 8px;">'
+              + ''.join(f'<button role="radio" aria-checked="{"true" if i == 0 else "false"}" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;{" box-shadow: inset 0 0 0 2px " + c + ";" if i == 0 else ""}"><span style="width: 22px; height: 22px; border-radius: 50%; background: {c};"></span></button>'
+                        for i, c in enumerate(['#5B9BFF', '#3FB68B', '#E5A23B', '#E26D5A', '#B07CF0', '#8A93A0']))
+              + '</div>')
+        rows.append(win_row(t, 'Акцент', sw))
+        rows.append(win_row(t, 'Параметри Windows', text_button(t, 'Відкрити'), 'Усе інше – там, де звикли.', last=True))
+    elif section == 'apps':
+        rows.append(win_hero(t, 'Нав\'язані програми',
+                             'Знайдено 5. Прибрані програми зникають для всіх користувачів і не з\'являються в нових профілях. Повернути будь-яку можна з Microsoft Store.',
+                             accent_button('Прибрати рекомендовані (4)')))
+        apps = [('Clipchamp', True), ('Copilot', True), ('Microsoft 365 Copilot', True), ('Новини', True), ('Погода', False)]
+        for k, (name, rec) in enumerate(apps):
+            rows.append(win_row(t, name, text_button(t, 'Прибрати'), 'Рекомендовано прибрати.' if rec else 'Комусь потрібна, тож лишається, доки не приберете самі.', last=k == len(apps) - 1))
+    else:
+        tw = [x for x in CATALOG['tweaks'] if x['category'] == section]
+        for k, x in enumerate(tw):
+            if 'choice' in x:
+                cur = x['default'] if applied else x['choice']['windows']
+                ctl = segmented(t, x['name'], [(o['name'], o['id'] == cur) for o in x['choice']['options']])
+            else:
+                ctl = switch(t, applied and x['default'] is True, x['name'])
+            rows.append(win_row(t, x['name'], ctl, x['description'], last=k == len(tw) - 1))
+    return '\n'.join(rows)
+
+
+# Вікно Кватирки 960×640 – так само, як shell/Kvatyrka.Shell/Windows/SettingsWindow.cs.
+def kvatyrka_window(t, section, applied):
+    title = next(n for i, n, _ in WIN_NAV if i == section)
     cur = ' aria-current="page"'
     navs = '\n      '.join(
-        f'<a href="#"{cur if n == SET_NAV[0][0] else ""} style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 10px; border-radius: 10px; text-decoration: none; line-height: 1;{" background: " + t["sel"] + ";" if n == SET_NAV[0][0] else ""}">{I(ic)}{n}</a>'
-        for n, ic in SET_NAV)
+        f'<a href="#"{cur if i == section else ""} style="display: flex; align-items: center; gap: 12px; height: 40px; flex-shrink: 0; padding: 0 10px; border-radius: 10px; text-decoration: none; line-height: 1;{" background: " + t["sel"] + ";" if i == section else ""}">{I(ic)}{n}</a>'
+        for i, n, ic in WIN_NAV)
     ctl = ''.join(f'<button aria-label="{lab}" style="width: 40px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: {t["sec"]};">{I(ic)}</button>'
                   for lab, ic in (('Згорнути', 'min'), ('Закрити', 'close')))
-    return f'''<div style="position: absolute; left: 290px; top: 77px; width: 860px; height: 560px; box-sizing: border-box; display: flex; flex-direction: column; background: {t["win"]}; border: 1px solid {t["border"]}; border-radius: 16px; box-shadow: {t["sh_win"]}; overflow: hidden;">
+    return f'''<div style="position: absolute; left: 240px; top: 85px; width: 960px; height: 640px; box-sizing: border-box; display: flex; flex-direction: column; background: {t["win"]}; border: 1px solid {t["border"]}; border-radius: 16px; box-shadow: {t["sh_win"]}; overflow: hidden;">
   <div style="height: 56px; display: flex; align-items: center; flex-shrink: 0;">
-    <div style="width: 215px; height: 56px; box-sizing: border-box; padding-left: 21px; display: flex; align-items: center; gap: 12px; flex-shrink: 0;">{I("sliders")}<span style="font-weight: 600; line-height: 1;">Налаштування</span></div>
-    <span style="flex-grow: 1; padding-left: 16px; font-weight: 600; line-height: 1;">{SET_NAV[0][0]}</span>
+    <div style="width: 216px; height: 56px; box-sizing: border-box; padding-left: 21px; display: flex; align-items: center; gap: 12px; flex-shrink: 0;">{logo(t)}<span style="font-weight: 600; line-height: 1;">Кватирка</span></div>
+    <span style="flex-grow: 1; padding-left: 16px; font-weight: 600; line-height: 1;">{title}</span>
     <div style="display: flex; align-items: center; padding: 0 7px 0 12px; flex-shrink: 0;">{ctl}</div>
   </div>
   <div style="flex-grow: 1; display: flex; min-height: 0;">
-    <nav aria-label="Розділи" style="width: 215px; flex-shrink: 0; padding: 0 11px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px;">
+    <nav aria-label="Розділи" style="width: 216px; flex-shrink: 0; padding: 0 11px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px;">
       {navs}
     </nav>
-    <div style="flex-grow: 1; min-width: 0; margin: 0 7px 7px 0; padding: 8px; box-sizing: border-box; display: flex; flex-direction: column; background: {t["panel"]}; border-radius: 8px;">
-{content}
+    <div style="flex-grow: 1; min-width: 0; margin: 0 7px 7px 0; padding: 8px; box-sizing: border-box; display: flex; flex-direction: column; background: {t["panel"]}; border-radius: 8px; overflow: hidden;">
+{win_section(t, section, applied)}
     </div>
   </div>
 </div>
@@ -279,14 +340,15 @@ def settings_window(t):
 
 
 BOARDS = [
-    ('Main.dc.html', 'Робочий стіл', 0, 0, lambda: page('Кватирка – робочий стіл', island(DARK), DARK)),
-    ('Island.dc.html', 'Меню', 1520, 0, lambda: page('Кватирка – меню', menu(DARK) + island(DARK, 'menu'), DARK)),
-    ('Quick.dc.html', 'Швидкі налаштування', 3040, 0, lambda: page('Кватирка – швидкі налаштування', quick(DARK) + island(DARK, 'quick'), DARK, vol_css(DARK))),
-    ('Clock.dc.html', 'Сповіщення й календар', 0, 930, lambda: page('Кватирка – сповіщення й календар', clock_panel(DARK) + island(DARK, 'clock'), DARK)),
-    ('Settings.dc.html', 'Налаштування', 1520, 930, lambda: page('Кватирка – налаштування', settings_window(DARK) + island(DARK, 'Налаштування'), DARK)),
-    ('Light.dc.html', 'Світла тема · меню', 0, 1860, lambda: page('Кватирка – світла тема, меню', menu(LIGHT) + island(LIGHT, 'menu'), LIGHT)),
-    ('LightQuick.dc.html', 'Світла тема · швидкі налаштування', 1520, 1860, lambda: page('Кватирка – світла тема, швидкі налаштування', quick(LIGHT) + island(LIGHT, 'quick'), LIGHT, vol_css(LIGHT))),
-    ('LightSettings.dc.html', 'Світла тема · налаштування', 3040, 1860, lambda: page('Кватирка – світла тема, налаштування', settings_window(LIGHT) + island(LIGHT, 'Налаштування'), LIGHT)),
+    ('Kvatyrka.dc.html', 'Кватирка · головне', 0, 0, lambda: page('Кватирка – головне', kvatyrka_window(DARK, 'home', False), DARK)),
+    ('Tweaks.dc.html', 'Кватирка · Пуск і панель задач', 1520, 0, lambda: page('Кватирка – Пуск і панель задач', kvatyrka_window(DARK, 'start', True), DARK)),
+    ('Apps.dc.html', 'Кватирка · програми', 3040, 0, lambda: page('Кватирка – програми', kvatyrka_window(DARK, 'apps', True), DARK)),
+    ('LightKvatyrka.dc.html', 'Світла тема · головне', 0, 930, lambda: page('Кватирка – світла тема, головне', kvatyrka_window(LIGHT, 'home', True), LIGHT)),
+    ('LightTweaks.dc.html', 'Світла тема · приватність', 1520, 930, lambda: page('Кватирка – світла тема, приватність', kvatyrka_window(LIGHT, 'privacy', True), LIGHT)),
+    ('Main.dc.html', 'Острів (за бажанням)', 3040, 930, lambda: page('Кватирка – острів', island(DARK), DARK)),
+    ('Island.dc.html', 'Острів · меню', 0, 1860, lambda: page('Кватирка – меню', menu(DARK) + island(DARK, 'menu'), DARK)),
+    ('Quick.dc.html', 'Острів · швидкі налаштування', 1520, 1860, lambda: page('Кватирка – швидкі налаштування', quick(DARK) + island(DARK, 'quick'), DARK, vol_css(DARK))),
+    ('Clock.dc.html', 'Острів · сповіщення й календар', 3040, 1860, lambda: page('Кватирка – сповіщення й календар', clock_panel(DARK) + island(DARK, 'clock'), DARK)),
 ]
 
 if __name__ == '__main__':
@@ -294,7 +356,7 @@ if __name__ == '__main__':
     path = os.path.join(OUT, 'canvas.json')
     idx = json.load(open(path, encoding='utf-8')) if os.path.exists(path) else {
         'v': 3, 'createdOnFiles': {'v': 1, 'at': '2026-11-06T01:05:00Z'}, 'title': 'Кватирка – концепції інтерфейсу', 'launch': {'view': 'canvas'},
-        'pages': [], 'notes': {'heading': {'x': 0, 'y': -300, 'text': 'Кватирка – Острів', 'kind': 'title1', 'maxW': 4480}}, 'designSystems': []}
+        'pages': [], 'notes': {'heading': {'x': 0, 'y': -300, 'text': 'Кватирка – Windows без зайвого', 'kind': 'title1', 'maxW': 4480}}, 'designSystems': []}
     idx['boards'] = {f: {'x': x, 'y': y, 'w': 1440, 'h': 810, 'title': ti} for f, ti, x, y, _ in BOARDS}
     idx['order'] = [b[0] for b in BOARDS]
     json.dump(idx, open(path, 'w', encoding='utf-8'), ensure_ascii=False)

@@ -1,7 +1,7 @@
 // Згенеровано з design/mockups.py скриптом design/icons_cs.py. Не редагувати вручну.
 namespace Kvatyrka.Shell.Ui;
 
-public enum IconKind { None, Folder, Globe, Gamepad, Terminal, Bag, Sliders, Music, Photo, Video, Note, Calc, Shot, Search, Left, Right, Min, Max, Close, Home, Drive, Download, Apps, Wifi, Volume, Moon, Sun, Power, Display, Palette, User, Shield, Refresh, Arrow, Contrast }
+public enum IconKind { None, Folder, Globe, Gamepad, Terminal, Bag, Sliders, Music, Photo, Video, Note, Calc, Shot, Search, Left, Right, Min, Max, Close, Home, Drive, Download, Apps, Wifi, Volume, Moon, Sun, Power, Display, Palette, User, Shield, Refresh, Arrow, Contrast, Taskbar, Block, Trash, Island }
 
 public static partial class Icons
 {
@@ -41,5 +41,9 @@ public static partial class Icons
         [IconKind.Refresh] = new("M19.5 12a7.5 7.5 0 1 1-2.2-5.3 M19.5 4.5v4h-4", ""),
         [IconKind.Arrow] = new("M5 12h14M13 6l6 6-6 6", ""),
         [IconKind.Contrast] = new("M3.5,12 A8.5,8.5 0 1 0 20.5,12 A8.5,8.5 0 1 0 3.5,12 Z", "M12 3.5a8.5 8.5 0 0 1 0 17z"),
+        [IconKind.Taskbar] = new("M5.5,4.5 H18.5 A2.5,2.5 0 0 1 21,7 V17 A2.5,2.5 0 0 1 18.5,19.5 H5.5 A2.5,2.5 0 0 1 3,17 V7 A2.5,2.5 0 0 1 5.5,4.5 Z M3 15h18M10 17.25h4", ""),
+        [IconKind.Block] = new("M3.5,12 A8.5,8.5 0 1 0 20.5,12 A8.5,8.5 0 1 0 3.5,12 Z M6 6l12 12", ""),
+        [IconKind.Trash] = new("M4.5 7h15M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7 M6.5 7l.8 11.6A1.5 1.5 0 0 0 8.8 20h6.4a1.5 1.5 0 0 0 1.5-1.4L17.5 7 M10 11v5M14 11v5", ""),
+        [IconKind.Island] = new("M5.5,4 H18.5 A2.5,2.5 0 0 1 21,6.5 V17.5 A2.5,2.5 0 0 1 18.5,20 H5.5 A2.5,2.5 0 0 1 3,17.5 V6.5 A2.5,2.5 0 0 1 5.5,4 Z M9,14.5 H15 A1.5,1.5 0 0 1 16.5,16 V16 A1.5,1.5 0 0 1 15,17.5 H9 A1.5,1.5 0 0 1 7.5,16 V16 A1.5,1.5 0 0 1 9,14.5 Z", ""),
     };
 }
