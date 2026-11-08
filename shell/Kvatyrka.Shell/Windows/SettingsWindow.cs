@@ -57,8 +57,9 @@ public sealed class SettingsWindow : Window
         Icon = System.Windows.Media.Imaging.BitmapFrame.Create(new Uri("pack://application:,,,/Assets/Kvatyrka.ico"));
 
         // Вікно вміщається в робочу область навіть на маленьких екранах.
-        var height = Math.Min(640, Math.Floor(SystemParameters.WorkArea.Height - 32));
-        var width = Math.Min(FrameWidth, Math.Floor(SystemParameters.WorkArea.Width - 32));
+        // Вікно разом із полем під тінь не більше за екран, інакше Windows його обріже.
+        var height = Math.Min(640, Math.Floor(SystemParameters.WorkArea.Height - 2 * ShellWindow.ShadowMargin));
+        var width = Math.Min(FrameWidth, Math.Floor(SystemParameters.WorkArea.Width - 2 * ShellWindow.ShadowMargin));
         var frame = new Border { Width = width, Height = height, CornerRadius = new CornerRadius(16), BorderThickness = new Thickness(1), Margin = new Thickness(ShellWindow.ShadowMargin) };
         frame.SetResourceReference(Border.BackgroundProperty, "window");
         frame.SetResourceReference(Border.BorderBrushProperty, "border");
