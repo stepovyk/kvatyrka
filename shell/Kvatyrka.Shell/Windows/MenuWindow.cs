@@ -252,8 +252,8 @@ public sealed class TileView : StackPanel
         Children.Clear();
         Width = TileWidth;
         if (app is null) return;
-        var square = new Border { Width = 48, Height = 48, CornerRadius = new CornerRadius(14), Margin = new Thickness(0, 12, 0, 10), HorizontalAlignment = HorizontalAlignment.Center };
-        square.SetResourceReference(Border.BackgroundProperty, "fill-tile");
+        // Місце під іконку без власної підкладки: виділяється лише вся плитка, без рамки в рамці.
+        var square = new Border { Width = 48, Height = 48, Margin = new Thickness(0, 12, 0, 10), HorizontalAlignment = HorizontalAlignment.Center };
         var glyph = AppCatalog.GlyphFor(app);
         if (glyph != IconKind.None) square.Child = new Ui.Icon { Kind = glyph, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         else

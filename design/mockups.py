@@ -171,7 +171,7 @@ LAUNCHER = sorted([('Файли', 'folder'), ('Браузер', 'globe'), ('Те
 def menu(t):
     tiles = '\n      '.join(
         f'<button style="height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border-radius: 14px; line-height: 1;">'
-        f'<span style="width: 48px; height: 48px; border-radius: 14px; background: {t["tile"]}; display: flex; align-items: center; justify-content: center;">{I(ic)}</span>{n}</button>'
+        f'<span style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">{I(ic)}</span>{n}</button>'
         for n, ic in LAUNCHER)
     inner = f'''  <div style="padding: 23px 23px 19px; display: flex; flex-direction: column; gap: 20px;">
     <label style="height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 14px; box-sizing: border-box; background: {t["tile"]}; border-radius: 14px; color: {t["sec"]}; font-size: 15px;">{I("search")}<input type="search" placeholder="Пошук програм" aria-label="Пошук програм" style="all: unset; width: 100%; color: {t["text"]}; line-height: 1;"></label>
