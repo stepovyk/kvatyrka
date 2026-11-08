@@ -91,7 +91,9 @@ public sealed class AppCatalog
         : Ui.IconKind.None;
 
     // Іконки читаються в окремому потоці оболонки: інтерфейс не чекає на диск і COM.
-    private readonly System.Collections.Concurrent.BlockingCollection<(string Target, int Px, Action<BitmapSource?>? Done)> _queue = new();
+    // Дві черги: те, що людина бачить зараз, іде першим; заздалегідь підготовка – у вільний час.
+    private readonly BlockingCollection<(string Target, int Px, Action<BitmapSource?>? Done)> _queue = new();
+    private readonly BlockingCollection<(string Target, int Px, Action<BitmapSource?>? Done)> _warm = new();
     private Thread? _worker;
 
     private void EnsureWorker()
@@ -99,8 +101,12 @@ public sealed class AppCatalog
         if (_worker is not null) return;
         _worker = new Thread(() =>
         {
-            foreach (var (target, px, done) in _queue.GetConsumingEnumerable())
+            var queues = new[] { _queue, _warm };
+            while (true)
             {
+                // TakeFromAny бере з першої непорожньої черги в порядку масиву – видимі іконки завжди першими.
+                BlockingCollection<(string Target, int Px, Action<BitmapSource?>? Done)>.TakeFromAny(queues, out var item);
+                var (target, px, done) = item;
                 BitmapSource? icon = null;
                 try { icon = Icon(target, px); }
                 catch (Exception ex) { Log.Write($"Іконка {target} не прочиталась: {ex.Message}"); }
@@ -109,6 +115,13 @@ public sealed class AppCatalog
         }) { IsBackground = true, Priority = ThreadPriority.BelowNormal, Name = "Kvatyrka.Icons" };
         _worker.SetApartmentState(ApartmentState.STA);
         _worker.Start();
+    }
+
+    // Чи іконка вже прочитана (null – прочитати не вдалося).
+    public bool TryCachedIcon(string target, int px, out BitmapSource? icon)
+    {
+        var key = target.Equals("explorer.exe", StringComparison.OrdinalIgnoreCase) ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe") : target;
+        return _icons.TryGetValue((key, px), out icon);
     }
 
     // Іконка з кешу одразу або пізніше через done (у потоці інтерфейсу).
@@ -126,7 +139,7 @@ public sealed class AppCatalog
     public void WarmUp(int px)
     {
         EnsureWorker();
-        foreach (var a in All) _queue.Add((a.Target, px, null));
+        foreach (var a in All) _warm.Add((a.Target, px, null));
     }
 
     public static void Launch(string target)

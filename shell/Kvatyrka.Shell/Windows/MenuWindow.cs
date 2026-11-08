@@ -258,10 +258,17 @@ public sealed class TileView : StackPanel
         if (glyph != IconKind.None) square.Child = new Ui.Icon { Kind = glyph, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         else
         {
-            var image = new Image { Width = 24, Height = 24 };
-            image.Source = AppCatalog.Instance.IconAsync(app.Target, ShellWindow.IconPixels, icon => { if (App == app) image.Source = icon; });
-            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-            square.Child = image;
+            // Іконку, яку Windows не віддала, замінює загальний знак програми – порожніх місць немає.
+            void Show(System.Windows.Media.Imaging.BitmapSource? icon)
+            {
+                if (App != app) return;
+                if (icon is null) { square.Child = new Ui.Icon { Kind = IconKind.Apps, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }; return; }
+                var image = new Image { Width = 24, Height = 24, Source = icon };
+                RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+                square.Child = image;
+            }
+            if (AppCatalog.Instance.TryCachedIcon(app.Target, ShellWindow.IconPixels, out var cached)) Show(cached);
+            else AppCatalog.Instance.IconAsync(app.Target, ShellWindow.IconPixels, Show);
         }
         Children.Add(square);
         Children.Add(new TextBlock
