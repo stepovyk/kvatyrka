@@ -14,6 +14,8 @@ public static class Snapshot
     public static void Run(string dir)
     {
         Directory.CreateDirectory(dir);
+        // Знімки не мають висіти вічно: якщо щось зациклилось, видно, на якому кроці.
+        var watchdog = new Timer(_ => { Services.Log.Write($"Знімки зависли на кроці: {_step}"); Environment.Exit(3); }, null, TimeSpan.FromMinutes(2), Timeout.InfiniteTimeSpan);
         foreach (var theme in new[] { Services.Appearance.Dark, Services.Appearance.Light })
         {
             App.Current.Settings.Theme = theme;
@@ -26,6 +28,7 @@ public static class Snapshot
                 : new[] { SettingsWindow.HomeSection, "start" };
             foreach (var s in sections)
             {
+                Step($"вікно {s} {t}");
                 settings.Section = s;
                 Settle();
                 // Список програм читається у фоні – чекаємо, доки з'явиться.
@@ -37,19 +40,32 @@ public static class Snapshot
 
         App.Current.Settings.Theme = Services.Appearance.Dark;
         Ui.Theme.Apply(App.Current.Settings);
+        Step("острів: створення");
         var island = new IslandWindow();
         island.Show();
+        Step("острів: показ");
         Settle();
         Save(island, Path.Combine(dir, "island.png"));
         foreach (var (name, popup) in new[] { ("menu", island.Menu), ("quick", island.Quick), ("clock", island.Clock) })
         {
+            Step($"панель {name}");
             popup.Toggle();
             Settle();
             Save(popup, Path.Combine(dir, $"{name}.png"));
             popup.HidePopup();
             Settle();
         }
+        Step("острів: закриття");
         island.Retire();
+        watchdog.Dispose();
+    }
+
+    private static string _step = "початок";
+
+    private static void Step(string name)
+    {
+        _step = name;
+        Services.Log.Write($"Знімок: {name}");
     }
 
     private static void Settle()
