@@ -15,7 +15,7 @@
 
 ## Kvatyrka.exe
 
-Один файл, нічого встановлювати не треба. Запустіть – і побачите розділи:
+**[Завантажити Kvatyrka.exe](https://github.com/stepovyk/kvatyrka/releases/latest)** – один файл, нічого встановлювати не треба. Запустіть – і побачите розділи:
 
 - **Головне:** скільки рекомендованих покращень увімкнено, кнопки «Увімкнути рекомендоване» й «Повернути як у Windows», охоронець, тема вікна.
 - **Покращення** за розділами – перемикачі з поясненням, що саме зміниться. Що стосується всього ПК, Windows попросить підтвердити правами адміністратора.
@@ -120,6 +120,17 @@ dotnet publish shell/Kvatyrka.Shell -c Release -o publish -p:SelfContained=true 
 Тести перевіряють, що кожне покращення вмикається й повертається рівно до попереднього стану, що охоронець чіпає лише вибране, а профілі збирача коректні. GitHub на кожен коміт запускає тести, збирає Kvatyrka.exe, робить знімки вікна й острова та перевіряє збирач у PowerShell 7 і Windows PowerShell 5.1.
 
 Шпалери за замовчуванням – [фото з Unsplash](https://images.unsplash.com/photo-1500382017468-9049fed747ef) за [ліцензією Unsplash](https://unsplash.com/license).
+
+## Підпис коду / Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- Committers and reviewers: [Stepovyk](https://github.com/stepovyk)
+- Approvers: [Stepovyk](https://github.com/stepovyk)
+
+Kvatyrka.exe збирається лише на GitHub з цього коду, і кожен підпис підтверджується вручну. / Kvatyrka.exe is built only by GitHub Actions from this repository, and every signing request is approved manually.
+
+**Приватність / Privacy.** Kvatyrka.exe нічого не надсилає в мережу: усі зміни – лише на вашому ПК. / This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
 ## Ліцензія
 
