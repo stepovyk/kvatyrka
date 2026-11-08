@@ -56,6 +56,8 @@ public static class Snapshot
             Step($"панель {name}");
             popup.Toggle();
             Settle();
+            // Іконки програм читаються у фоні – даємо їм з'явитися, як і в житті за мить після відкриття.
+            if (name == "menu") { Thread.Sleep(2000); Settle(); }
             Save(popup, Path.Combine(dir, $"{name}.png"));
             popup.HidePopup();
             Settle();
